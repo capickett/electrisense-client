@@ -7,10 +7,12 @@ XCC     = mipsel-openwrt-linux-gcc
 CFLAGS  = -Wall -g
 LDFLAGS = -lcurl
 
+BINS = bin/x86_posttest bin/posttest bin/x86_buffertest bin/buffertest
+
 .PHONY: clean clobber
 .SECONDARY:
 
-all: bin/posttest bin/x86_posttest
+all: $(BINS)
 
 bin/%: obj/%.o
 	$(XCC) -o $@ $^ $(LDFLAGS)
