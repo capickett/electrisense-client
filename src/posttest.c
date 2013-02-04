@@ -8,7 +8,7 @@
 #include <curl/curl.h>
 
 #define FILENAME "test.file"
-#define SERVER   "http://192.168.1.17:8080/"
+#define SERVER   "http://localhost:8080/"
 
 size_t write_data(void *buffer, size_t size, size_t nmemb, void *userp) {
   return size*nmemb; /* Do not print to stdout */
