@@ -90,5 +90,5 @@ int main(int argc, char* argv[]) {
   curl_slist_free_all(headerlist);
   curl_formfree(formpost);
   free(fbuf);
-  return 0;
+  return EXIT_SUCCESS;
 }
