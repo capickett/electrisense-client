@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
 
   close(fd);
 
-  curl_global_init(CURL_GLOBAL_ALL); /* Init curl vars */
+  curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
   
   /* Add the file to the request */
   curl_formadd(&formpost,
@@ -89,6 +89,7 @@ int main(int argc, char* argv[]) {
   }
   curl_slist_free_all(headerlist);
   curl_formfree(formpost);
+  curl_global_cleanup();
   free(fbuf);
   return EXIT_SUCCESS;
 }

@@ -70,6 +70,7 @@ int main(int argc, char* argv[]) {
   size_t  bufferfree = 0;       /* Number of bytes available to be written to */
   ssize_t readlength = 0;       /* Length of data read by read_data() */
   int     fd         = 0;       /* Source file descriptor */
+  long    sendtime   = 0;    /* Stores the time result for all data sends */
 
   CURL* curl;
   CURLcode res;
@@ -97,7 +98,7 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  printf("Electrisense buffer test\nConfiguration:\n");
+  printf("Electrisense client buffer test\nConfiguration:\n");
   printf("  Stream size: %d\n  Buffer size: %ld\n", STREAM_LEN, buffersize);
   printf("  Data source: %s\n  Server url:  %s\n", filepath, server);
 
@@ -112,7 +113,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   
-  curl_global_init(CURL_GLOBAL_ALL); /* Init curl vars */
+  curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
 
   if ((curl = curl_easy_init()) == NULL) { /* Init an easy_session */
     fprintf(stderr, "curl: init failed\n");
@@ -135,7 +136,7 @@ int main(int argc, char* argv[]) {
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
   printf("done!\n");
 
-  printf("Starting test...\n");
+  printf("Starting test...\n\n");
   for (i = 0; i < TEST_ITERS; ++i) {
     struct timeval t1, t2;
     int num_reads = 0;
@@ -158,7 +159,8 @@ int main(int argc, char* argv[]) {
     }
     gettimeofday(&t2, NULL);
     time_elapsed = (1000000*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec));
-    printf("done! (%ld avg us between read, %d reads)\n", time_elapsed/num_reads, num_reads);
+    printf("done! (%ld avg usec between read, %d reads)\n",
+        time_elapsed/num_reads, num_reads);
 
     printf("    sending buffer...");
     gettimeofday(&t1, NULL);
@@ -170,13 +172,19 @@ int main(int argc, char* argv[]) {
     }
     gettimeofday(&t2, NULL);
     time_elapsed = (1000000*(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec));
-    printf("done! (%ld us to complete)\n", time_elapsed);
+    sendtime += time_elapsed;
+    printf("done! (%ld usec to complete)\n", time_elapsed);
   }
 
+  printf("\nAverage time to send %ld bytes: %ld usec\n", 
+      buffersize, sendtime/TEST_ITERS);
+  printf("Cleanup...");
   curl_easy_cleanup(curl);
   curl_slist_free_all(headerlist);
   curl_formfree(formpost);
+  curl_global_cleanup();
   close(fd);
   free(buffer);
-  exit(EXIT_SUCCESS);
+  printf("done!\n");
+  return 0;
 }
