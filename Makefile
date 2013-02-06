@@ -2,10 +2,10 @@
 # UbiComp Lab - University of Washington
 # Electrisense
 
-CC      = gcc
-XCC     = mipsel-openwrt-linux-gcc
-CFLAGS  = -Wall -g
-LDFLAGS = -lcurl
+CC       = gcc
+XCC      = mipsel-openwrt-linux-gcc
+CFLAGS  += -Wall -g
+LDFLAGS += -lcurl
 
 BINS = bin/x86_posttest bin/posttest bin/x86_buffertest bin/buffertest
 
