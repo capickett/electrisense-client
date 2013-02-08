@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
   size_t  bufferfree = 0;       /* Number of bytes available to be written to */
   ssize_t readlength = 0;       /* Length of data read by read_data() */
   int     fd         = 0;       /* Source file descriptor */
-  long    sendtime   = 0;    /* Stores the time result for all data sends */
+  long    sendtime   = 0;       /* Stores the time result for all data sends */
 
   CURL* curl;
   CURLcode res;
