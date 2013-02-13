@@ -1,0 +1,32 @@
+.TH "Buffer" 3 "Tue Feb 12 2013" "Carambola Client" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+Buffer \- 
+.PP
+A buffer with status header\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <buffer\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "char \fBstatus\fP"
+.br
+.ti -1c
+.RI "char \fBdata\fP [\fB__BUFFER_SIZE\fP-1]"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+A buffer with status header\&. 
+
+The first byte contains the status flags associated with the buffer\&. At this moment, the only flag available is \fBST_BUFFER_EMPTY\fP, which signifies where the buffer is empty and ready for new data or not\&. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Carambola Client from the source code\&.

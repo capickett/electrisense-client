@@ -1,0 +1,41 @@
+\hypertarget{buffer_8h}{\section{src/shared/buffer.h File Reference}
+\label{buffer_8h}\index{src/shared/buffer.\-h@{src/shared/buffer.\-h}}
+}
+
+
+Definition for the shared buffer used by the consumer and relay.  
+
+
+\subsection*{Data Structures}
+\begin{DoxyCompactItemize}
+\item 
+struct \hyperlink{structbuffer}{Buffer}
+\begin{DoxyCompactList}\small\item\em A buffer with status header. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\subsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \hyperlink{buffer_8h_a3063b847e4252503da6763594dfd1811}{\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E}~102400
+\begin{DoxyCompactList}\small\item\em The size of each buffer, including the status header. \end{DoxyCompactList}\item 
+\#define \hyperlink{buffer_8h_aba617d84db78af124c9bf1b7b87fefef}{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y}~1
+\begin{DoxyCompactList}\small\item\em Buffer empty flag. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+Definition for the shared buffer used by the consumer and relay. The memory shared between the consumer and relay consists of a double buffer with status fields for each buffer. To begin, both buffers are set to be empty. The consumer will then fill begin filling an empty buffer. When the buffer is full, the \hyperlink{buffer_8h_aba617d84db78af124c9bf1b7b87fefef}{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y} flag shall be unset for that buffer. This must happen {\itshape after} any interaction with the buffer is complete, or else a race condition could occur. The relay will find any full buffer and begin to empty it. When this buffer is empty, the buffer empty flag shall be reset for that buffer. Again, this must happen {\itshape after} any interaction with the buffer is complete, or else a race condition could occur. 
+
+\subsection{Macro Definition Documentation}
+\hypertarget{buffer_8h_a3063b847e4252503da6763594dfd1811}{\index{buffer.\-h@{buffer.\-h}!\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E@{\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E}}
+\index{\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E@{\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E}!buffer.h@{buffer.\-h}}
+\subsubsection[{\-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E}]{\setlength{\rightskip}{0pt plus 5cm}\#define \-\_\-\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-S\-I\-Z\-E~102400}}\label{buffer_8h_a3063b847e4252503da6763594dfd1811}
+
+
+The size of each buffer, including the status header. 
+
+\hypertarget{buffer_8h_aba617d84db78af124c9bf1b7b87fefef}{\index{buffer.\-h@{buffer.\-h}!S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y@{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y}}
+\index{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y@{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y}!buffer.h@{buffer.\-h}}
+\subsubsection[{S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y}]{\setlength{\rightskip}{0pt plus 5cm}\#define S\-T\-\_\-\-B\-U\-F\-F\-E\-R\-\_\-\-E\-M\-P\-T\-Y~1}}\label{buffer_8h_aba617d84db78af124c9bf1b7b87fefef}
+
+
+Buffer empty flag. 
+
+If set, the buffer is empty and ready to be filled. 

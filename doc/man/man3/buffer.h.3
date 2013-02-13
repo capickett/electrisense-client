@@ -1,0 +1,49 @@
+.TH "src/shared/buffer.h" 3 "Tue Feb 12 2013" "Carambola Client" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+src/shared/buffer.h \- 
+.PP
+Definition for the shared buffer used by the consumer and relay\&.  
+
+.SH SYNOPSIS
+.br
+.PP
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fBBuffer\fP"
+.br
+.RI "\fIA buffer with status header\&. \fP"
+.in -1c
+.SS "Macros"
+
+.in +1c
+.ti -1c
+.RI "#define \fB__BUFFER_SIZE\fP   102400"
+.br
+.RI "\fIThe size of each buffer, including the status header\&. \fP"
+.ti -1c
+.RI "#define \fBST_BUFFER_EMPTY\fP   1"
+.br
+.RI "\fIBuffer empty flag\&. \fP"
+.in -1c
+.SH "Detailed Description"
+.PP 
+Definition for the shared buffer used by the consumer and relay\&. 
+
+The memory shared between the consumer and relay consists of a double buffer with status fields for each buffer\&. To begin, both buffers are set to be empty\&. The consumer will then fill begin filling an empty buffer\&. When the buffer is full, the \fBST_BUFFER_EMPTY\fP flag shall be unset for that buffer\&. This must happen \fIafter\fP any interaction with the buffer is complete, or else a race condition could occur\&. The relay will find any full buffer and begin to empty it\&. When this buffer is empty, the buffer empty flag shall be reset for that buffer\&. Again, this must happen \fIafter\fP any interaction with the buffer is complete, or else a race condition could occur\&. 
+.SH "Macro Definition Documentation"
+.PP 
+.SS "#define __BUFFER_SIZE   102400"
+
+.PP
+The size of each buffer, including the status header\&. 
+.SS "#define ST_BUFFER_EMPTY   1"
+
+.PP
+Buffer empty flag\&. If set, the buffer is empty and ready to be filled\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Carambola Client from the source code\&.

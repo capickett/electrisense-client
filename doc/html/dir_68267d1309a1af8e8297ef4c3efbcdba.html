@@ -38,6 +38,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
   <div id="navrow1" class="tabs">
     <ul class="tablist">
       <li><a href="index.html"><span>Main&#160;Page</span></a></li>
+      <li><a href="annotated.html"><span>Data&#160;Structures</span></a></li>
       <li><a href="files.html"><span>Files</span></a></li>
       <li>
         <div id="MSearchBox" class="MSearchBoxInactive">
@@ -62,7 +63,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
      onmouseover="return searchBox.OnSearchSelectShow()"
      onmouseout="return searchBox.OnSearchSelectHide()"
      onkeydown="return searchBox.OnSearchSelectKey(event)">
-</div>
+<a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(0)"><span class="SelectionMark">&#160;</span>All</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(1)"><span class="SelectionMark">&#160;</span>Data Structures</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(2)"><span class="SelectionMark">&#160;</span>Files</a><a class="SelectItem" href="javascript:void(0)" onclick="searchBox.OnSelectItem(3)"><span class="SelectionMark">&#160;</span>Macros</a></div>
 
 <!-- iframe showing the search results (closed by default) -->
 <div id="MSearchResultsWindow">
@@ -86,7 +87,7 @@ Directory dependency graph for src:</div>
 <div class="dyncontent">
 <div class="center"><img src="dir_68267d1309a1af8e8297ef4c3efbcdba_dep.png" border="0" usemap="#dir__68267d1309a1af8e8297ef4c3efbcdba__dep" alt="src"/></div>
 <map name="dir__68267d1309a1af8e8297ef4c3efbcdba__dep" id="dir__68267d1309a1af8e8297ef4c3efbcdba__dep">
-<area shape="rect" id="node3" href="dir_dbed0529300e1ac3250e765f716f751f.html" title="consumer" alt="" coords="123,27,201,75"/><area shape="rect" id="node4" href="dir_a0168736838b9e78fd7b0c10301b2e98.html" title="relay" alt="" coords="27,27,99,75"/><area shape="rect" id="graph2" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html" alt="" coords="16,16,309,85"/></map>
+<area shape="rect" id="node3" href="dir_dbed0529300e1ac3250e765f716f751f.html" title="consumer" alt="" coords="219,27,297,75"/><area shape="rect" id="node4" href="dir_a0168736838b9e78fd7b0c10301b2e98.html" title="relay" alt="" coords="123,27,195,75"/><area shape="rect" id="node5" href="dir_4f38db07240614f25134cb9a8bebbaf9.html" title="shared" alt="" coords="27,27,99,75"/><area shape="rect" id="graph2" href="dir_68267d1309a1af8e8297ef4c3efbcdba.html" alt="" coords="16,16,405,85"/></map>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="subdirs"></a>
@@ -95,18 +96,18 @@ Directories</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:dir_a0168736838b9e78fd7b0c10301b2e98"><td class="memItemLeft" align="right" valign="top">directory &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="dir_a0168736838b9e78fd7b0c10301b2e98.html">relay</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:dir_4f38db07240614f25134cb9a8bebbaf9"><td class="memItemLeft" align="right" valign="top">directory &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="dir_4f38db07240614f25134cb9a8bebbaf9.html">shared</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="files"></a>
 Files</h2></td></tr>
 <tr class="memitem:main_8c"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><b>main.c</b></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:sharedbuffer_8h"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><b>sharedbuffer.h</b> <a href="sharedbuffer_8h_source.html">[code]</a></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Mon Feb 11 2013 23:37:16 for Carambola Client by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Tue Feb 12 2013 20:39:35 for Carambola Client by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.3.1
 </small></address>
