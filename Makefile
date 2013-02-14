@@ -14,6 +14,9 @@ LDFLAGS += -lcurl
 
 all:
 
+docs:
+	doxygen
+
 bin/%: obj/%.o
 	$(XCC) -o $@ $^ $(LDFLAGS)
 bin/x86_%: obj/x86_%.o
