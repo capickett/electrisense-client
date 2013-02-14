@@ -24,7 +24,7 @@
  *       Useful for debugging.
  */
 static struct option long_options[] = {
-  {"server",      required_argument,  NULL, 's'},
+  {"server-path",      required_argument,  NULL, 's'},
   {"data-source", required_argument,  NULL, 'd'},
   {"help",        no_argument,        NULL, 'h'},
   {"verbose",     no_argument,        NULL, 'v'}

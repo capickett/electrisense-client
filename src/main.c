@@ -23,9 +23,12 @@
  *   handle SD card data.
  */
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 
 #include "main.h"
 #include "consumer/consumer.h"
@@ -38,6 +41,9 @@
  * @see main.c
  */
 int main(int argc, char* argv[]) {
+  int shmid; /* shared memory id */
+  size_t shm_size = __BUFFER_SIZE * 2; /* shared memory size */
+  Buffer* buffers; /* shared memory buffers */
   int verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   char* data_source = NULL; /* data source for consumer */
   char* server_path = NULL; /* server path for relay */
@@ -48,6 +54,48 @@ int main(int argc, char* argv[]) {
     usage();
     exit(EXIT_FAILURE);
   }
+
+  if (verbose) { /* print config */
+    printf("Configuration:\n");
+    printf("  verbosity:    %s\n", (verbose > 1 ? "HIGH" : "LOW"));
+    printf("  data source:  %s\n", data_source);
+    printf("  server path:  %s\n", server_path);
+    printf("\n");
+  }
+
+  /* Set up shared memory buffer */
+  if (verbose)
+    printf("Setting up shared memory buffer (size: %zd)...\n", shm_size);
+  if ((shmid = shmget(IPC_PRIVATE, shm_size,
+          IPC_CREAT | IPC_EXCL | 00600)) < 0) {
+    /* shared mem get failed */
+    perror("shmget");
+    exit(EXIT_FAILURE);
+  }
+  if (verbose)
+    printf("  created!\n");
+
+  buffers = (Buffer*) shmat(shmid, NULL, 0);
+  if (buffers == (Buffer*) -1) { /* Could not attach to shm */
+    perror("shmat");
+    exit(EXIT_FAILURE);
+  }
+  if (verbose) {
+    printf("  attached!\n");
+    printf("...done!\n");
+  }
+  
+  
+
+  if (verbose)
+    printf("Detaching shared memory buffer...\n");
+  if (shmdt((const void*) buffers) < 0) {
+    perror("shmdt");
+    exit(EXIT_FAILURE);
+  }
+  buffers = NULL;
+  if (verbose)
+    printf("...done!\n");
   return EXIT_SUCCESS;
 }
 
