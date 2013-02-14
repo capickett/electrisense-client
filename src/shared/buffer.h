@@ -26,7 +26,7 @@
  * moment, the only flag available is #ST_BUFFER_EMPTY, which signifies where
  * the buffer is empty and ready for new data or not.
  */
-struct buffer {
+struct buffer_st {
   char status;
   char data[__BUFFER_SIZE-1];
 };
