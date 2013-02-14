@@ -7,28 +7,33 @@ XCC      = mipsel-openwrt-linux-gcc
 CFLAGS  += -Wall -g
 LDFLAGS += -lcurl
 
-#BINS = bin/x86_posttest bin/posttest bin/x86_buffertest bin/buffertest
+OBJS = obj/main.o obj/consumer.o obj/relay.o
+X86OBJS = obj/x86_main.o obj/x86_consumer.o obj/x86_relay.o
+BINS = bin/client bin/x86_client
 
-.PHONY: clean clobber
+.PHONY: clean
 .SECONDARY:
 
-all:
+all: $(BINS)
+obj/main.o obj/x86_main.o: src/main.c src/main.h
+obj/consumer.o obj/x86_consumer.o: src/consumer/consumer.c src/consumer/consumer.h
+obj/relay.o obj/x86_relay.o: src/relay/relay.c src/relay/relay.h
 
 docs:
 	doxygen
 
-bin/%: obj/%.o
-	$(XCC) -o $@ $^ $(LDFLAGS)
-bin/x86_%: obj/x86_%.o
-	$(CC) -o $@ $^ $(LDFLAGS)
+bin/client: $(OBJS)
+	$(XCC) -o $@ $(OBJS) $(LDFLAGS)
 
-obj/%.o: src/%.c $(wildcard src/%.h)
+bin/x86_client: $(X86OBJS)
+	$(CC) -o $@ $(X86OBJS) $(LDFLAGS)
+
+$(OBJS):
 	$(XCC) -c $(CFLAGS) -o $@ $<
-obj/x86_%.o: src/%.c $(wildcard src/%.h)
+
+$(X86OBJS):
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 clean:
 	@-rm -f obj/*
-
-clobber: clean
 	@-rm -f bin/*
