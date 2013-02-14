@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     printf("...done!\n");
   }
   
-  
+  /* TODO: fork() then run consumer and relay code */ 
 
   if (verbose)
     printf("Detaching shared memory buffer...\n");
