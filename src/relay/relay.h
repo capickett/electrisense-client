@@ -12,6 +12,9 @@
  * @authors Larson, Patrick; Pickett, Cameron
  */
 
+#ifndef _RELAY_RELAY_H
+#define _RELAY_RELAY_H
+
 /* This is the public header file, all interface related details belong here */
 
 struct relay_st {
@@ -68,3 +71,5 @@ int relay_process(Relay handle);
  * @param handle The handle to be freed
  */
 void relay_cleanup(Relay* handle);
+
+#endif

@@ -13,6 +13,9 @@
  * buffer is complete, or else a race condition could occur.
  */
 
+#ifndef _SHARED_BUFFER_H
+#define _SHARED_BUFFER_H
+
 /** The size of each buffer, including the status header. */
 #define __BUFFER_SIZE 102400
 
@@ -32,3 +35,5 @@ typedef struct buffer Buffer;
 
 /** Buffer empty flag. If set, the buffer is empty and ready to be filled.  */
 #define ST_BUFFER_EMPTY 1
+
+#endif

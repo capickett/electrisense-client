@@ -17,6 +17,9 @@
  * @authors Larson, Patrick; Pickett, Cameron
  */
 
+#ifndef _CONSUMER_CONSUMER_H
+#define _CONSUMER_CONSUMER_H
+
 /* This is the public header file, all interface related details belong here */
 
 struct consumer_st {
@@ -74,3 +77,5 @@ int consumer_process(Consumer handle);
  * @param handle The handle to be freed
  */
 void consumer_cleanup(Consumer* handle);
+
+#endif
