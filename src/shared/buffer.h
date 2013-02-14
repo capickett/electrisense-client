@@ -31,7 +31,7 @@ struct buffer_st {
   char data[__BUFFER_SIZE-1];
 };
 
-typedef struct buffer Buffer;
+typedef struct buffer_st Buffer;
 
 /** Buffer empty flag. If set, the buffer is empty and ready to be filled.  */
 #define ST_BUFFER_EMPTY 1
