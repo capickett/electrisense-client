@@ -1,5 +1,3 @@
-@mainpage Carambola client overview
-
 The software detailed in this documentation was designed and implemented for
 the purposes of connecting a
 [Carambola](http://www.8devices.com/product/3/carambola "Carambola") to the
