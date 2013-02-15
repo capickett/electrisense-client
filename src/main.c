@@ -158,10 +158,8 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   buffers = NULL;
-  if (verbose) {
-    printf(pid == 0 ? "[R] " : "[C] ");
+  if (verbose)
     printf("done!\n");
-  }
 
   if (pid != 0) { /* Remove shared memory and reap child */
     if (verbose)
@@ -172,9 +170,13 @@ int main(int argc, char* argv[]) {
       exit(EXIT_FAILURE);
     }
     if (verbose)
-      printf("[R] done!\n");
+      printf("done!\n");
     
+    if (verbose)
+      printf("[R] Waiting on relay to exit...");
     wait(NULL);
+    if (verbose)
+      printf("done!\n");
   }
 
   return EXIT_SUCCESS;
