@@ -30,10 +30,34 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 
-#include "main.h"
 #include "consumer/consumer.h"
 #include "relay/relay.h"
 #include "shared/buffer.h"
+
+
+/**
+ * The options available for invoking the program from the command line.
+ * - *server-path*: 
+ *       A valid URI pointing to the local network server for the relay
+ *       to communicate with.
+ * - *data-source*:
+ *       A valid URI pointing to the data source for the collector to grab
+ *       measured data from.
+ * - *verbose*:
+ *       A flag to increase the frequency and detail of logging by the program.
+ *       Useful for debugging.
+ */
+static struct option long_options[] = {
+  {"server-path", required_argument,  NULL, 's'},
+  {"data-source", required_argument,  NULL, 'd'},
+  {"help",        no_argument,        NULL, 'h'},
+  {"verbose",     no_argument,        NULL, 'v'}
+};
+
+static void usage();
+
+static void get_args(int argc, char** argv, char** data_source,
+    char** server_path, int* verbose);
 
 
 /**
@@ -99,6 +123,7 @@ int main(int argc, char* argv[]) {
   return EXIT_SUCCESS;
 }
 
+/** Print out help message */
 static void usage() {
   fprintf(stderr, "Usage: client [-d|--data-source=<path>] [-s|--server-path=<path>]\n");
   fprintf(stderr, "              [-v|--verbose [-v|--verbose]] [--help]\n");
@@ -112,6 +137,7 @@ static void usage() {
   fprintf(stderr, "  -v, --verbose  increase program output. Use twice for more output\n");
 }
 
+/** Get all args from the command line */
 static void get_args(int argc, char** argv, char** data_source,
     char** server_path, int* verbose) {
   int c;

@@ -27,7 +27,9 @@
  * the buffer is empty and ready for new data or not.
  */
 struct buffer_st {
+  /** Status flags, currently only contains #ST_BUFFER_EMPTY */
   char status;
+  /** Data buffer, note that it is one less than #__BUFFER_SIZE */
   char data[__BUFFER_SIZE-1];
 };
 
