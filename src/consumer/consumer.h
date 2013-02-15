@@ -22,8 +22,11 @@
 
 /* This is the public header file, all interface related details belong here */
 
-struct consumer_st {
+static struct consumer_st {
   /* Any operational parameters go here */
+  Buffer* buffers;
+  int     data_fd;
+  int     verbose;
 };
 
 /**
@@ -37,13 +40,17 @@ typedef struct consumer_st* Consumer;
  *
  * Returns NULL in the event of initialization failure.
  *
+ * @param b A pointer to the shared double buffer.
+ * @param data_source A string of a valid URI to the source of data for the
+ * consumer to read from. 
+ *
  * @return A malloc'd handle to be used for all future calls to to the consumer
  * interface. The handle contains all configuration details necessary for the
  * relay to process data. In the event that the consumer is stoppped, it is the
  * caller's responsibility to free the Consumer handler by calling
  * #consumer_cleanup.
  */
-Consumer consumer_init();
+Consumer consumer_init(Buffer* b, char* data_source);
 
 /**
  * Perform one unit of work.
