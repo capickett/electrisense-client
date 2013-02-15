@@ -107,8 +107,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   if (verbose) {
-    printf("  attached. addr=%p\n", buffers);
-    printf("...done!\n");
+    printf("  attached. addr=%p\nShared memory setup done!\n", buffers);
   }
   
   /* fork */
@@ -148,25 +147,31 @@ int main(int argc, char* argv[]) {
   }
 
   /* detach shared memory */
-  if (verbose)
-    printf("Detaching shared memory buffer...\n");
+  if (verbose) {
+    printf(pid == 0 ? "[R] " : "[C] ");
+    printf("Detaching shared memory buffer...");
+  }
   if (shmdt((const void*) buffers) < 0) {
+    printf("\n");
     perror("shmdt");
     exit(EXIT_FAILURE);
   }
   buffers = NULL;
-  if (verbose)
-    printf("...done!\n");
+  if (verbose) {
+    printf(pid == 0 ? "[R] " : "[C] ");
+    printf("done!\n");
+  }
 
   if (pid != 0) { /* Remove shared memory */
     if (verbose)
-      printf("Removing shared memory...\n");
+      printf("[R] Removing shared memory...");
     if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+      printf("\n[R] ");
       perror("shmctl");
       exit(EXIT_FAILURE);
     }
     if (verbose)
-      printf("...done!\n");
+      printf("[R] done!\n");
   }
 
   return EXIT_SUCCESS;
