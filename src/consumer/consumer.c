@@ -6,11 +6,14 @@
  */
 
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
 #include "consumer.h"
+#include "../shared/buffer.h"
 
 
 Consumer consumer_init(Buffer* b, char* data_source, int verbose) {
@@ -27,12 +30,14 @@ Consumer consumer_init(Buffer* b, char* data_source, int verbose) {
   if (verbose)
     printf("[C] Data source opened. fd = %d\n", fd);
 
-  c = (Consumer) malloc(sizeof(consumer_st));
+  c = (Consumer) malloc(sizeof(struct consumer_st));
   c->buffers = b;
   c->data_fd = fd;
   c->verbose = verbose;
   if (verbose)
     printf("[C] Consumer initialized!\n");
+
+  return c;
 }
 
 int consumer_process(Consumer c) {
@@ -44,7 +49,7 @@ int consumer_process(Consumer c) {
     /* Can't fit? Check if other buffer is empty */
       /* Empty? switch buffer, start filling */
       /* Not empty? Write to SD, incremement error counter */
-
+  return -1;
 }
 
 void consumer_cleanup(Consumer* c) {

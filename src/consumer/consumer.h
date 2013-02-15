@@ -22,7 +22,9 @@
 
 /* This is the public header file, all interface related details belong here */
 
-static struct consumer_st {
+#include "../shared/buffer.h"
+
+struct consumer_st {
   /* Any operational parameters go here */
   Buffer* buffers;
   int     data_fd;
@@ -43,6 +45,7 @@ typedef struct consumer_st* Consumer;
  * @param b A pointer to the shared double buffer.
  * @param data_source A string of a valid URI to the source of data for the
  * consumer to read from. 
+ * @param verbose Enable verbose output from consumer
  *
  * @return A malloc'd handle to be used for all future calls to to the consumer
  * interface. The handle contains all configuration details necessary for the
@@ -50,7 +53,7 @@ typedef struct consumer_st* Consumer;
  * caller's responsibility to free the Consumer handler by calling
  * #consumer_cleanup.
  */
-Consumer consumer_init(Buffer* b, char* data_source);
+Consumer consumer_init(Buffer* b, char* data_source, int verbose);
 
 /**
  * Perform one unit of work.

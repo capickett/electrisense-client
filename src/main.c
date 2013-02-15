@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include "consumer/consumer.h"
@@ -162,7 +163,7 @@ int main(int argc, char* argv[]) {
     printf("done!\n");
   }
 
-  if (pid != 0) { /* Remove shared memory */
+  if (pid != 0) { /* Remove shared memory and reap child */
     if (verbose)
       printf("[R] Removing shared memory...");
     if (shmctl(shmid, IPC_RMID, NULL) < 0) {
@@ -172,6 +173,8 @@ int main(int argc, char* argv[]) {
     }
     if (verbose)
       printf("[R] done!\n");
+    
+    wait(NULL);
   }
 
   return EXIT_SUCCESS;
