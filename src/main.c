@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <unistd.h>
 
 #include "consumer/consumer.h"
 #include "relay/relay.h"
@@ -65,6 +66,7 @@ static void get_args(int argc, char** argv, char** data_source,
  * @see main.c
  */
 int main(int argc, char* argv[]) {
+  int pid;   /* pid for fork() */
   int shmid; /* shared memory id */
   size_t shm_size = __BUFFER_SIZE * 2; /* shared memory size */
   Buffer* buffers; /* shared memory buffers */
@@ -97,7 +99,7 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   if (verbose)
-    printf("  created!\n");
+    printf("  created. shmid=%d\n", shmid);
 
   buffers = (Buffer*) shmat(shmid, NULL, 0);
   if (buffers == (Buffer*) -1) { /* Could not attach to shm */
@@ -105,12 +107,47 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   if (verbose) {
-    printf("  attached!\n");
+    printf("  attached. addr=%p\n", buffers);
     printf("...done!\n");
   }
   
-  /* TODO: fork() then run consumer and relay code */ 
+  /* fork */
+  if ((pid = fork()) < 0) {
+    perror("fork");
+    exit(EXIT_FAILURE);
+  }
 
+  if (pid == 0) { /* relay code */
+    Relay r;
+    /* TODO: Implement relay code */
+    /*if ((r = relay_init()) == NULL) {
+      perror("relay_init");
+      exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+      if (relay_process(r) < 0)
+        break;
+    }
+
+    relay_cleanup(&r);*/
+  } else { /* consumer code */
+    Consumer c;
+    /* TODO: Implement consumer code */
+    /*if ((c = consumer_init()) == NULL) {
+      perror("consumer_init");
+      exit(EXIT_FAILURE);
+    }
+
+    while (1) {
+      if (consumer_process(c) < 0)
+        break;
+    }
+
+    consumer_cleanup(&c);*/
+  }
+
+  /* detach shared memory */
   if (verbose)
     printf("Detaching shared memory buffer...\n");
   if (shmdt((const void*) buffers) < 0) {
@@ -120,6 +157,18 @@ int main(int argc, char* argv[]) {
   buffers = NULL;
   if (verbose)
     printf("...done!\n");
+
+  if (pid != 0) { /* Remove shared memory */
+    if (verbose)
+      printf("Removing shared memory...\n");
+    if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+      perror("shmctl");
+      exit(EXIT_FAILURE);
+    }
+    if (verbose)
+      printf("...done!\n");
+  }
+
   return EXIT_SUCCESS;
 }
 
