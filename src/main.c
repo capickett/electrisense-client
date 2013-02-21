@@ -24,11 +24,12 @@
  */
 
 #include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -56,10 +57,31 @@ static struct option long_options[] = {
   {"verbose",     no_argument,        NULL, 'v'}
 };
 
+/**
+ * A flag to enable/disable verbose debugging output at runtime.
+ * 
+ * Running the client program with one -v flag will enable LOW debugging level,
+ * where only the initialization/destruction outputs are enabled. Running the
+ * client program with two -v flags will enable HIGH debugging level, where
+ * debugging output during operation is also enabled.
+ */
+static int verbose;
+
+/**
+ * The process id returned by fork().
+ *
+ * For the consumer process, pid is the id of the relay.
+ * For the relay process, pid is 0.
+ */
+static int pid;
+
+
 static void usage();
 
 static void get_args(int argc, char** argv, char** data_source,
     char** server_path, int* verbose);
+    
+void handle_child_death(int sig);
 
 
 /**
@@ -67,13 +89,12 @@ static void get_args(int argc, char** argv, char** data_source,
  * @see main.c
  */
 int main(int argc, char* argv[]) {
-  int pid;   /* pid for fork() */
   int shmid; /* shared memory id */
   size_t shm_size = __BUFFER_SIZE * 2; /* shared memory size */
   Buffer* buffers; /* shared memory buffers */
-  int verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   char* data_source = NULL; /* data source for consumer */
   char* server_path = NULL; /* server path for relay */
+  verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
 
   get_args(argc, argv, &data_source, &server_path, &verbose);
   
@@ -110,15 +131,30 @@ int main(int argc, char* argv[]) {
   if (verbose) {
     printf("  attached. addr=%p\nShared memory setup done!\n", buffers);
   }
+  /* Shared memory buffer set up */
+  
+  if (verbose)
+    printf("\n");
   
   /* fork */
+  if (verbose) {
+    printf("[C] Forking relay as child process...");
+    /* Needed to prevent fork from copying buffers & printing 2x */
+    fflush(stdout);
+  }
+  
   if ((pid = fork()) < 0) {
+    printf("\n");
     perror("fork");
     exit(EXIT_FAILURE);
   }
+  if ((pid != 0) && verbose)
+    printf("done! (pid = %d)\n", pid);
+  
 
   if (pid == 0) { /* relay code */
     Relay r;
+    signal(SIGCHLD, &handle_child_death);
     /* TODO: Implement relay code */
     /*if ((r = relay_init()) == NULL) {
       perror("relay_init");
@@ -131,6 +167,7 @@ int main(int argc, char* argv[]) {
     }
 
     relay_cleanup(&r);*/
+    while (1) {}
   } else { /* consumer code */
     Consumer c;
     /* TODO: Implement consumer code */
@@ -163,7 +200,7 @@ int main(int argc, char* argv[]) {
 
   if (pid != 0) { /* Remove shared memory and reap child */
     if (verbose)
-      printf("[R] Removing shared memory...");
+      printf("[C] Removing shared memory...");
     if (shmctl(shmid, IPC_RMID, NULL) < 0) {
       printf("\n[R] ");
       perror("shmctl");
@@ -173,7 +210,7 @@ int main(int argc, char* argv[]) {
       printf("done!\n");
     
     if (verbose)
-      printf("[R] Waiting on relay to exit...");
+      printf("[C] Waiting on relay to exit...");
     wait(NULL);
     if (verbose)
       printf("done!\n");
@@ -226,3 +263,28 @@ static void get_args(int argc, char** argv, char** data_source,
     }
   }
 }
+
+/**
+ * Handle the death of a child process.
+ *
+ * If the child process exits abnormally, or exits with an error code, then
+ * make an attempt to respawn the process.
+ * 
+ * @todo Respawn child process 
+ */
+ void handle_child_death(int sig) {
+   int status;
+   
+   if (verbose)
+     printf("[R] Consumer received child death signal\n");
+   
+   wait(&status);
+   
+   if (WIFEXITED(status)) {
+     printf("[R] Consumer exited normally with status: %d\n", WEXITSTATUS(status));
+   }
+   
+   if (WIFSIGNALED(status)) {
+     printf("[R] Consumer was terminated by signal: %d\n", WTERMSIG(status));
+   }
+ }
