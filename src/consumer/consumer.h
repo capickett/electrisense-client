@@ -26,9 +26,12 @@
 
 struct consumer_st {
   /* Any operational parameters go here */
-  Buffer* buffers;
-  int     data_fd;
-  int     verbose;
+  Buffer* buffers; /**< A pointer to two buffers that make the double buffer */
+  int     buf_idx; /**< The current buffer in use by the consumer */
+  int     data_fd; /**< A file descriptor for the source of data */
+  int      ext_fd; /**< A file descriptor to the external buffer dump */
+  int   err_count; /**< A count of the times consumer has written to ext_fd */
+  int     verbose; /**< A flag to enable verbose console output */
 };
 
 /**
@@ -45,6 +48,8 @@ typedef struct consumer_st* Consumer;
  * @param b A pointer to the shared double buffer.
  * @param data_source A string of a valid URI to the source of data for the
  * consumer to read from. 
+ * @param ext_dump A string of a valid URI to the location the consumer will
+ * use in the case that it needs to dump one or more buffers
  * @param verbose Enable verbose output from consumer
  *
  * @return A malloc'd handle to be used for all future calls to to the consumer
@@ -53,7 +58,7 @@ typedef struct consumer_st* Consumer;
  * caller's responsibility to free the Consumer handler by calling
  * #consumer_cleanup.
  */
-Consumer consumer_init(Buffer* b, char* data_source, int verbose);
+Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose);
 
 /**
  * Perform one unit of work.

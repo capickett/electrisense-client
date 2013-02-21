@@ -51,10 +51,11 @@
  *       Useful for debugging.
  */
 static struct option long_options[] = {
-  {"server-path", required_argument,  NULL, 's'},
-  {"data-source", required_argument,  NULL, 'd'},
-  {"help",        no_argument,        NULL, 'h'},
-  {"verbose",     no_argument,        NULL, 'v'}
+  {"server-path",  required_argument, NULL, 's'},
+  {"data-source",  required_argument, NULL, 'd'},
+  {"external-dir", required_argument, NULL, 'e'},
+  {"help",         no_argument,       NULL, 'h'},
+  {"verbose",      no_argument,       NULL, 'v'}
 };
 
 /**
@@ -75,11 +76,17 @@ static int verbose;
  */
 static int pid;
 
+/**
+ * A flag used when the relay process dies and the consumer needs to refork the
+ * process.
+ */
+static int relay_needs_refork;
+
 
 static void usage();
 
 static void get_args(int argc, char** argv, char** data_source,
-    char** server_path, int* verbose);
+    char** server_path, char** external_dir, int* verbose);
     
 void handle_relay_death(int sig);
 
@@ -90,16 +97,18 @@ void handle_relay_death(int sig);
  */
 int main(int argc, char* argv[]) {
   int shmid; /* shared memory id */
-  size_t shm_size = __BUFFER_SIZE * 2; /* shared memory size */
+  size_t shm_size = sizeof(Buffer) * 2; /* shared memory size */
   Buffer* buffers; /* shared memory buffers */
-  char* data_source = NULL; /* data source for consumer */
-  char* server_path = NULL; /* server path for relay */
+  char* data_source  = NULL; /* data source for consumer */
+  char* server_path  = NULL; /* server path for relay */
+  char* external_dir = NULL; /* external dir for consumer */
   verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   struct sigaction act; /* Used to add the relay death signal handler */
+  relay_needs_refork = 0;
 
-  get_args(argc, argv, &data_source, &server_path, &verbose);
+  get_args(argc, argv, &data_source, &server_path, &external_dir, &verbose);
   
-  if (data_source == NULL || server_path == NULL) {
+  if (data_source == NULL || server_path == NULL || external_dir == NULL) {
     usage();
     exit(EXIT_FAILURE);
   }
@@ -108,13 +117,14 @@ int main(int argc, char* argv[]) {
     printf("Configuration:\n");
     printf("  verbosity:    %s\n", (verbose > 1 ? "HIGH" : "LOW"));
     printf("  data source:  %s\n", data_source);
+    printf("  ext. dump:    %s\n", external_dir);
     printf("  server path:  %s\n", server_path);
     printf("\n");
   }
 
   /* Set up shared memory buffer */
   if (verbose)
-    printf("Setting up shared memory buffer (size: %zd)...\n", shm_size);
+    printf("Setting up shared memory buffer (size = %zd)...\n", shm_size);
   if ((shmid = shmget(IPC_PRIVATE, shm_size,
           IPC_CREAT | IPC_EXCL | 00600)) < 0) {
     /* shared mem get failed */
@@ -122,15 +132,17 @@ int main(int argc, char* argv[]) {
     exit(EXIT_FAILURE);
   }
   if (verbose)
-    printf("  created. shmid=%d\n", shmid);
+    printf("  created.  (shmid = %d)\n", shmid);
 
   buffers = (Buffer*) shmat(shmid, NULL, 0);
   if (buffers == (Buffer*) -1) { /* Could not attach to shm */
     perror("shmat");
     exit(EXIT_FAILURE);
   }
+  buffers[0].capacity = __BUFFER_CAPACITY;
+  buffers[1].capacity = __BUFFER_CAPACITY;
   if (verbose) {
-    printf("  attached. addr=%p\nShared memory setup done!\n", buffers);
+    printf("  attached. (addr  = %p)\nShared memory setup done!\n", buffers);
   }
   /* Shared memory buffer set up */
   
@@ -160,8 +172,8 @@ int main(int argc, char* argv[]) {
   if ((pid != 0) && verbose)
     printf("done! (pid = %d)\n", pid);
   
-
-  if (pid == 0) { /* relay code */
+relay_start:
+  if (pid == 0) { /* relay code */    
     Relay r;
     /* TODO: Implement relay code */
     /*if ((r = relay_init()) == NULL) {
@@ -172,23 +184,37 @@ int main(int argc, char* argv[]) {
     while (1) {
       if (relay_process(r) < 0)
         break;
+      
     }
 
     relay_cleanup(&r);*/
   } else { /* consumer code */
     Consumer c;
-    /* TODO: Implement consumer code */
-    /*if ((c = consumer_init()) == NULL) {
-      perror("consumer_init");
+    if ((c = consumer_init(buffers, data_source, external_dir, verbose-1)) == NULL) {
+      perror("[C] consumer_init");
       exit(EXIT_FAILURE);
     }
 
     while (1) {
       if (consumer_process(c) < 0)
         break;
+      
+      if (relay_needs_refork) {
+        printf("[C] Attempting to restart relay process...");
+        if ((pid = fork()) < 0) {
+          printf("\n");
+          perror("fork");
+          exit(EXIT_FAILURE);
+        }
+        relay_needs_refork = 0;
+        if (pid != 0)
+          printf("done! (pid = %d)\n", pid);
+        if (pid == 0)
+          goto relay_start;
+      }
     }
 
-    consumer_cleanup(&c);*/
+    consumer_cleanup(&c);
   }
 
   /* detach shared memory */
@@ -243,9 +269,9 @@ static void usage() {
 
 /** Get all args from the command line */
 static void get_args(int argc, char** argv, char** data_source,
-    char** server_path, int* verbose) {
+    char** server_path, char** external_dir, int* verbose) {
   int c;
-  while ((c = getopt_long(argc, argv, "d:s:v", long_options, NULL))) {
+  while ((c = getopt_long(argc, argv, "d:s:ve:", long_options, NULL))) {
     if (c == -1)
       break; /* Done processing optargs */
 
@@ -254,8 +280,13 @@ static void get_args(int argc, char** argv, char** data_source,
         usage();
         exit(EXIT_SUCCESS);
         break;
+
       case 'd': /* Data source option */
         *data_source = optarg;
+        break;
+
+      case 'e': /* External directory option */
+        *external_dir = optarg;
         break;
 
       case 's': /* Server path option */
@@ -284,7 +315,7 @@ void handle_relay_death(int sig) {
   int status;
   
   if (verbose)
-    printf("[C] Relay received child death signal\n");
+    printf("[C] Received child death signal\n");
   
   if (waitpid(-1, &status, WNOHANG) > 0) {
   
@@ -295,5 +326,7 @@ void handle_relay_death(int sig) {
     if (WIFSIGNALED(status)) {
       printf("[C] Relay was terminated by signal: %d\n", WTERMSIG(status));
     }
+
+    relay_needs_refork = 1;
   }
 }

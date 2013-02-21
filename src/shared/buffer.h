@@ -5,10 +5,10 @@
  * The memory shared between the consumer and relay consists of a double buffer
  * with status fields for each buffer. To begin, both buffers are set to be
  * empty. The consumer will then fill begin filling an empty buffer. When the
- * buffer is full, the #ST_BUFFER_EMPTY flag shall be unset for that buffer.
+ * buffer is full, the size field will be equal to the capacity field.
  * This must happen *after* any interaction with the buffer is complete, or else
  * a race condition could occur. The relay will find any full buffer and begin
- * to empty it. When this buffer is empty, the buffer empty flag shall be reset
+ * to empty it. When this buffer is empty, the buffer size shall be reset
  * for that buffer. Again, this must happen *after* any interaction with the
  * buffer is complete, or else a race condition could occur.
  */
@@ -17,7 +17,7 @@
 #define _SHARED_BUFFER_H
 
 /** The size of each buffer, including the status header. */
-#define __BUFFER_SIZE 102400
+#define __BUFFER_CAPACITY 102400
 
 /**
  * A buffer with status header. 
@@ -27,15 +27,14 @@
  * the buffer is empty and ready for new data or not.
  */
 struct buffer_st {
-  /** Status flags, currently only contains #ST_BUFFER_EMPTY */
-  char status;
-  /** Data buffer, note that it is one less than #__BUFFER_SIZE */
-  char data[__BUFFER_SIZE-1];
+  /** The current size of the buffer */
+  size_t size;
+  /** The capacity of the buffer */
+  size_t capacity;
+  /** Data buffer */
+  char data[__BUFFER_CAPACITY];
 };
 
 typedef struct buffer_st Buffer;
-
-/** Buffer empty flag. If set, the buffer is empty and ready to be filled.  */
-#define ST_BUFFER_EMPTY 1
 
 #endif
