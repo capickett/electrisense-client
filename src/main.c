@@ -81,7 +81,7 @@ static void usage();
 static void get_args(int argc, char** argv, char** data_source,
     char** server_path, int* verbose);
     
-void handle_child_death(int sig);
+void handle_relay_death(int sig);
 
 
 /**
@@ -95,6 +95,7 @@ int main(int argc, char* argv[]) {
   char* data_source = NULL; /* data source for consumer */
   char* server_path = NULL; /* server path for relay */
   verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
+  struct sigaction act; /* Used to add the relay death signal handler */
 
   get_args(argc, argv, &data_source, &server_path, &verbose);
   
@@ -143,6 +144,14 @@ int main(int argc, char* argv[]) {
     fflush(stdout);
   }
   
+  act.sa_handler = &handle_relay_death;
+  act.sa_flags   = SA_NOCLDSTOP;
+  if (sigaction(SIGCHLD, &act, NULL) < 0) {
+    printf("\n");
+    perror("signal");
+    exit(EXIT_FAILURE);
+  }
+
   if ((pid = fork()) < 0) {
     printf("\n");
     perror("fork");
@@ -154,7 +163,6 @@ int main(int argc, char* argv[]) {
 
   if (pid == 0) { /* relay code */
     Relay r;
-    signal(SIGCHLD, &handle_child_death);
     /* TODO: Implement relay code */
     /*if ((r = relay_init()) == NULL) {
       perror("relay_init");
@@ -167,7 +175,6 @@ int main(int argc, char* argv[]) {
     }
 
     relay_cleanup(&r);*/
-    while (1) {}
   } else { /* consumer code */
     Consumer c;
     /* TODO: Implement consumer code */
@@ -211,6 +218,7 @@ int main(int argc, char* argv[]) {
     
     if (verbose)
       printf("[C] Waiting on relay to exit...");
+    signal(SIGCHLD, SIG_IGN);
     wait(NULL);
     if (verbose)
       printf("done!\n");
@@ -272,19 +280,20 @@ static void get_args(int argc, char** argv, char** data_source,
  * 
  * @todo Respawn child process 
  */
- void handle_child_death(int sig) {
-   int status;
-   
-   if (verbose)
-     printf("[R] Consumer received child death signal\n");
-   
-   wait(&status);
-   
-   if (WIFEXITED(status)) {
-     printf("[R] Consumer exited normally with status: %d\n", WEXITSTATUS(status));
-   }
-   
-   if (WIFSIGNALED(status)) {
-     printf("[R] Consumer was terminated by signal: %d\n", WTERMSIG(status));
-   }
- }
+void handle_relay_death(int sig) {
+  int status;
+  
+  if (verbose)
+    printf("[C] Relay received child death signal\n");
+  
+  if (waitpid(-1, &status, WNOHANG) > 0) {
+  
+    if (WIFEXITED(status)) {
+      printf("[C] Relay exited normally with status: %d\n", WEXITSTATUS(status));
+    }
+    
+    if (WIFSIGNALED(status)) {
+      printf("[C] Relay was terminated by signal: %d\n", WTERMSIG(status));
+    }
+  }
+}
