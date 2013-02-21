@@ -19,6 +19,10 @@
 
 struct relay_st {
   /* Any operational parameters go here */
+  Buffer* buffers;
+  int     server_fd;
+  int     backup_fd;
+  int     verbose;
 };
 
 /**
