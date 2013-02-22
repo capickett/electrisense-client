@@ -61,20 +61,20 @@ Relay relay_init();
  * Only performing one "unit" of work allows for the driver to interrupt the
  * process for whatever reason, or cleanup in the event of a failure.
  * 
- * @param handle The handle containing all necessary configuration to perform
+ * @param r The handle containing all necessary configuration to perform
  * the relay's task. Caller must call #relay_init before this function.
  * @return 0 if successful, -1 if there is an error
  * @see #relay_init
  */
-int relay_process(Relay handle);
+int relay_process(Relay r);
 
 /**
  * Frees the relay handle and performs any additional cleanup required to shut
  * down the relay. The specified handle will be NULL after this function
  * returns.
  *
- * @param handle The handle to be freed
+ * @param r The handle to be freed
  */
-void relay_cleanup(Relay* handle);
+void relay_cleanup(Relay* r);
 
 #endif

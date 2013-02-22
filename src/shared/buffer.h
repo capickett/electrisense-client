@@ -18,15 +18,15 @@
 
 #include <stdlib.h>
 
-/** The size of each buffer, including the status header. */
+/** The capacity of each buffer */
 #define __BUFFER_CAPACITY 102400
 
 /**
- * A buffer with status header. 
+ * A buffer with status fields.
  *
- * The first byte contains the status flags associated with the buffer. At this
- * moment, the only flag available is #ST_BUFFER_EMPTY, which signifies where
- * the buffer is empty and ready for new data or not.
+ * A buffer may be handled by the consumer while its size < its capacity. When
+ * the buffer's size == the buffer's capacity, it is full and ready for the
+ * relay to process it.
  */
 struct buffer_st {
   /** The current size of the buffer */
