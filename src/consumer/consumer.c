@@ -42,6 +42,8 @@ Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose
   if ((ext_fd = mkstemp(external_dump_path)) < 0)
     return NULL;
 
+  free(external_dump_path);
+
   if (verbose) printf("[C] External dump file opened. (fd = %d)\n", ext_fd);
 
   c = (Consumer) malloc(sizeof(struct consumer_st));
@@ -75,6 +77,7 @@ int consumer_process(Consumer c) {
       continue;
 
     perror("read");
+    free(tmp_buf);
     return -1;
   }
 
@@ -111,6 +114,7 @@ int consumer_process(Consumer c) {
       if (c->err_count == ERROR_LIMIT) {
         /* TODO: Notify server that we are writing to SD too much */
         if (verbose) printf("[C] Error limit reached!\n");
+        free(tmp_buf);
         return -1;
       }
     } else {
@@ -122,6 +126,7 @@ int consumer_process(Consumer c) {
       cur_buf->size = amount_read;
     }
   }
+  free(tmp_buf);
   return 0;
 }
 

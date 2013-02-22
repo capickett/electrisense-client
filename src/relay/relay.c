@@ -6,8 +6,14 @@
  * @authors Larson, Patrick; Pickett, Cameron
  */
 
-#include "./relay.h"
-#include "../shared/shared.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "relay.h"
+#include "../shared/buffer.h"
 
 #define PAYLOAD_SIZE 1024
 
@@ -30,12 +36,12 @@ Relay relay_init(Buffer* b,
 
   if (verbose)
     printf("[R] Initializing relay...\n");
-  if ((fd = open(server_source, O_RDWR)) < 0) {
+  if ((s_fd = open(server_source, O_RDWR)) < 0) {
     printf("[R] failed to establish communication with server");
     perror(server_source);
     return NULL;
   }
-  if ((fd = open(backup_source, O_RDWR)) < 0) {
+  if ((b_fd = open(backup_source, O_RDWR)) < 0) {
     printf("[R] failed to establish communication with backup");
     perror(backup_source);
     return NULL;
@@ -43,7 +49,7 @@ Relay relay_init(Buffer* b,
 
   r = (Relay) malloc(sizeof(struct relay_st));
   r->buffers = b;
-  r->server_fd = fd;
+  r->server_fd = s_fd;
   r->verbose = verbose;
   if (verbose)
     printf("[R] Relay initialized!\n");
@@ -85,10 +91,9 @@ void relay_cleanup(Relay* r) {
   }
 
   if ((*r)->verbose) {
-    free((void *)handle);
     printf("[R] Relay destroyed!\n");
   }
-  free((void *)handle);
+  free((void *)(*r));
   *r = NULL;
 }
 

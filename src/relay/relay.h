@@ -16,6 +16,7 @@
 #define _RELAY_RELAY_H
 
 /* This is the public header file, all interface related details belong here */
+#include "../shared/buffer.h"
 
 struct relay_st {
   /* Any operational parameters go here */

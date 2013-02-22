@@ -16,6 +16,8 @@
 #ifndef _SHARED_BUFFER_H
 #define _SHARED_BUFFER_H
 
+#include <stdlib.h>
+
 /** The size of each buffer, including the status header. */
 #define __BUFFER_CAPACITY 102400
 
