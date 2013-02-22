@@ -101,14 +101,14 @@ int main(int argc, char* argv[]) {
   Buffer* buffers; /* shared memory buffers */
   char* data_source  = NULL; /* data source for consumer */
   char* server_path  = NULL; /* server path for relay */
-  char* external_dir = NULL; /* external dir for consumer */
+  char* external_dir = ""; /* external dir for consumer */
   verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   struct sigaction act; /* Used to add the relay death signal handler */
   relay_needs_refork = 0;
 
   get_args(argc, argv, &data_source, &server_path, &external_dir, &verbose);
   
-  if (data_source == NULL || server_path == NULL || external_dir == NULL) {
+  if (data_source == NULL || server_path == NULL) {
     usage();
     exit(EXIT_FAILURE);
   }
@@ -260,6 +260,7 @@ static void usage() {
   fprintf(stderr, "\n");
   fprintf(stderr, "REQUIRED:\n");
   fprintf(stderr, "  -d, --data-source=PATH  sets the data path for the consumer\n");
+  fprintf(stderr, "  -e, --external-dir=PATH sets the dump path for the consumer\n");
   fprintf(stderr, "  -s, --server-path=PATH  sets the server uri for the relay\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "OPTIONAL:\n");
