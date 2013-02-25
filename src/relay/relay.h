@@ -16,14 +16,19 @@
 #define _RELAY_RELAY_H
 
 /* This is the public header file, all interface related details belong here */
+#include <curl/curl.h>
 #include "../shared/buffer.h"
 
 struct relay_st {
   /* Any operational parameters go here */
-  Buffer* buffers;
-  int     server_fd;
-  int     backup_fd;
-  int     verbose;
+  Buffer*             buffers;
+  char*            server_url;
+  CURL*                  curl;
+  struct curl_httppost* form0;
+  struct curl_httppost* form1;
+  int                 buf_idx;
+  int               backup_fd;
+  int                 verbose;
 };
 
 /**

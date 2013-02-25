@@ -6,7 +6,9 @@
  * @authors Larson, Patrick; Pickett, Cameron
  */
 
+#include <curl/curl.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -17,10 +19,12 @@
 
 #define PAYLOAD_SIZE 1024
 
-
+static size_t write_data(void* buffer,
+                         size_t size,
+                         size_t nmemb,
+                         void* userp);
 static int readData(int fd, size_t size);
-
-static int overload_process(Relay r);
+static void* overload_process(void* args);
 
 /**
  * Initializes the relay
@@ -31,29 +35,68 @@ Relay relay_init(Buffer* b,
                  char* backup_source,
                  int verbose) {
   Relay   r; /* Relay struct to create */
-  int  s_fd; /* fd for server communication */
   int  b_fd; /* fd for SD card communication */
 
   if (verbose)
     printf("[R] Initializing relay...\n");
-  if ((s_fd = open(server_source, O_RDWR)) < 0) {
-    printf("[R] failed to establish communication with server");
-    perror(server_source);
-    return NULL;
-  }
   if ((b_fd = open(backup_source, O_RDWR)) < 0) {
-    printf("[R] failed to establish communication with backup");
+    printf("[R] failed to establish communication with backup\n");
     perror(backup_source);
     return NULL;
   }
 
   r = (Relay) malloc(sizeof(struct relay_st));
   r->buffers = b;
-  r->server_fd = s_fd;
+  r->backup_fd = b_fd;
   r->verbose = verbose;
   if (verbose)
     printf("[R] Relay initialized!\n");
- 
+
+  if (verbose)
+    printf("[R] Creating CURL forms...\n");
+
+  /* Curl initialization */
+  CURL* curl;
+  struct curl_httppost* buf0_formpost   = NULL;
+  struct curl_httppost* buf0_lastptr    = NULL;
+
+  struct curl_httppost* buf1_formpost   = NULL;
+  struct curl_httppost* buf1_lastptr    = NULL;
+  struct curl_slist*    headerlist = NULL;
+  static const char     buf[]      = "Expect:";
+
+  curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
+
+  if ((curl = curl_easy_init()) == NULL) { /* Init an easy_session */
+    printf("[R] curl: init failed\n");
+    return NULL;
+  }
+  
+  /* Add the file to the request */
+  curl_formadd(&buf0_formpost,
+               &buf0_lastptr,
+               CURLFORM_COPYNAME, "sendfile",
+               CURLFORM_BUFFER, "foo",
+               CURLFORM_BUFFERPTR, r->buffers[0].data,
+               CURLFORM_BUFFERLENGTH, r->buffers[0].capacity,
+               CURLFORM_END);
+  curl_formadd(&buf1_formpost,
+               &buf1_lastptr,
+               CURLFORM_COPYNAME, "sendfile",
+               CURLFORM_BUFFER, "bar",
+               CURLFORM_BUFFERPTR, r->buffers[1].data,
+               CURLFORM_BUFFERLENGTH, r->buffers[1].capacity,
+               CURLFORM_END);
+  
+  headerlist = curl_slist_append(headerlist, buf);
+  curl_easy_setopt(curl, CURLOPT_URL, r->server_url);
+  curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+
+  r->curl = curl;
+  r->form0 = buf0_formpost;
+  r->form1 = buf1_formpost;
+
   return r;
 }
 
@@ -68,11 +111,25 @@ Relay relay_init(Buffer* b,
  */
 int relay_process(Relay r) {
   /* Step 1: check sd card */
-    /* Anything there? Spawn a thread */
-    /* High error counter, more threads? */
+  if (0 /* check SD card */) {
+      pthread_t sd_thread;
+      if (pthread_create(&sd_thread, NULL, &overload_process, (void *)r) != 0) {
+        printf("[R] Failed to create child thread");
+        perror("pthread_create");
+        return -1;
+      }
+      if (pthread_detach(sd_thread) != 0) {
+        printf("[R] Failed to detach child thread");
+        return -1;
+      }
+  }
 
   /* Step 2: check buffer */
     /* Anything there? send PAYLOAD_SIZE bytes to server */
+    /* Grab payload bytes, readjust buffer (circular buffer might
+       be good here) */
+    /* send off bytes */
+
   return -1;
 }
 
@@ -84,7 +141,7 @@ void relay_cleanup(Relay* r) {
   if ((*r)->verbose)
     printf("[R] Consumer clean up...\n");
 
-  if (close((*r)->server_fd) < 0) {
+  if (close((*r)->backup_fd) < 0) {
     printf("[R] ");
     perror("close");
     return;
@@ -97,11 +154,17 @@ void relay_cleanup(Relay* r) {
   *r = NULL;
 }
 
+static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
+  return size*nmemb; /* Do not print to stdout */
+}
 
 static int readData(int fd, size_t size) {
   return -1;
 }
 
-static int overload_process(Relay r) {
-  return -1;
+static void* overload_process(void *arg) {
+  Relay r = (Relay) arg;
+  /* get fd to SD stuff */
+  int sd_fd;
+  return NULL;
 }

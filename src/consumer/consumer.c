@@ -35,7 +35,7 @@ Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose
   
   if (verbose) printf("[C] Data source opened. (fd = %d)\n", fd);
 
-  external_dump_path = (char*) malloc(strlen(ext_dump) + 6 + 5 + 1);
+  external_dump_path = (char*) malloc(strlen(ext_dump) + 12 + 6 + 1);
   strcpy(external_dump_path, ext_dump);
   strcat(external_dump_path, "client-dump_XXXXXX");
   
@@ -109,7 +109,14 @@ int consumer_process(Consumer c) {
     if (cur_buf->size == cur_buf->capacity) {
       /* Still full. Write cur buf to SD, incremement error counter */
       if (verbose) printf("[C] Buffer %d still full! Dumping current buffer\n", c->buf_idx ^ 1);
-      write(c->ext_fd, &c->buffers[c->buf_idx], sizeof(Buffer));
+      
+      while (write(c->ext_fd, &c->buffers[c->buf_idx], sizeof(Buffer)) < 0) {
+        if (errno == EAGAIN || errno == EINTR)
+          continue;
+
+        perror("write");
+        return -1;
+      }
       ++c->err_count;
       if (c->err_count == ERROR_LIMIT) {
         /* TODO: Notify server that we are writing to SD too much */
