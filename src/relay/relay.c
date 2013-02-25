@@ -128,18 +128,27 @@ int relay_process(Relay r) {
        be good here) */
     /* send off bytes */
   
-  // TODO: Set buf_idx 
+  if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
+    // switch buffers
+    r->buf_idx = r->buf_idx ^ 1;
   
-  if (buf_idx == 0) {
-    curl_easy_setopt(curl, CURLOPT_HTTPPOST, r->form0);
+  if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
+    // neither buffer is full, continue
+    return 0;
+  
+  if (r->buf_idx == 0) {
+    curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, r->form0);
   } else {
-    curl_easy_setopt(curl, CURLOPT_HTTPPOST, r->form1);
+    curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, r->form1);
   }
   CURLcode res = curl_easy_perform(r->curl);
   if (res != CURLE_OK) {
     // TODO: Some error happened
     return -1;
   }
+  // successful transfer, reset buffer and swap index
+  r->buffers[r->buf_idx].size = 0;
+  r->buf_idx = r->buf_idx ^ 1;
   return 0;
 }
 
@@ -159,10 +168,10 @@ void relay_cleanup(Relay* r) {
   if ((*r)->verbose)
     printf("[R] Cleaning up CURL request");
 
-  curl_easy_cleanup(r->curl);
-  curl_slist_free_all(r->slist);
-  curl_formfree(r->form0);
-  curl_formfree(r->form1);
+  curl_easy_cleanup((*r)->curl);
+  curl_slist_free_all((*r)->slist);
+  curl_formfree((*r)->form0);
+  curl_formfree((*r)->form1);
   curl_global_cleanup();
 
   if ((*r)->verbose) {
@@ -170,7 +179,7 @@ void relay_cleanup(Relay* r) {
   }
 
   free((void *)(*r));
-  *r = NULL
+  *r = NULL;
 }
 
 static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
