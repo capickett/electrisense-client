@@ -17,13 +17,10 @@
 #include "relay.h"
 #include "../shared/buffer.h"
 
-#define PAYLOAD_SIZE 1024
-
 static size_t write_data(void* buffer,
                          size_t size,
                          size_t nmemb,
                          void* userp);
-static int readData(int fd, size_t size);
 static void* overload_process(void* args);
 
 /**
@@ -62,7 +59,7 @@ Relay relay_init(Buffer* b,
 
   struct curl_httppost* buf1_formpost   = NULL;
   struct curl_httppost* buf1_lastptr    = NULL;
-  struct curl_slist*    headerlist = NULL;
+  struct curl_slist*    headerlist      = NULL;
   static const char     buf[]      = "Expect:";
 
   curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
@@ -93,9 +90,10 @@ Relay relay_init(Buffer* b,
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 
-  r->curl = curl;
+  r->curl  =          curl;
   r->form0 = buf0_formpost;
   r->form1 = buf1_formpost;
+  r->slist =    headerlist;
 
   return r;
 }
@@ -129,8 +127,20 @@ int relay_process(Relay r) {
     /* Grab payload bytes, readjust buffer (circular buffer might
        be good here) */
     /* send off bytes */
-
-  return -1;
+  
+  // TODO: Set buf_idx 
+  
+  if (buf_idx == 0) {
+    curl_easy_setopt(curl, CURLOPT_HTTPPOST, r->form0);
+  } else {
+    curl_easy_setopt(curl, CURLOPT_HTTPPOST, r->form1);
+  }
+  CURLcode res = curl_easy_perform(r->curl);
+  if (res != CURLE_OK) {
+    // TODO: Some error happened
+    return -1;
+  }
+  return 0;
 }
 
 /**
@@ -139,30 +149,36 @@ int relay_process(Relay r) {
  */
 void relay_cleanup(Relay* r) {
   if ((*r)->verbose)
-    printf("[R] Consumer clean up...\n");
+    printf("[R] Relay clean up...\n");
 
   if (close((*r)->backup_fd) < 0) {
     printf("[R] ");
     perror("close");
-    return;
   }
+
+  if ((*r)->verbose)
+    printf("[R] Cleaning up CURL request");
+
+  curl_easy_cleanup(r->curl);
+  curl_slist_free_all(r->slist);
+  curl_formfree(r->form0);
+  curl_formfree(r->form1);
+  curl_global_cleanup();
 
   if ((*r)->verbose) {
     printf("[R] Relay destroyed!\n");
   }
+
   free((void *)(*r));
-  *r = NULL;
+  *r = NULL
 }
 
 static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
   return size*nmemb; /* Do not print to stdout */
 }
 
-static int readData(int fd, size_t size) {
-  return -1;
-}
-
 static void* overload_process(void *arg) {
+  // TODO: This.
   Relay r = (Relay) arg;
   /* get fd to SD stuff */
   int sd_fd;

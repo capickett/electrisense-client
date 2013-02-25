@@ -26,6 +26,7 @@ struct relay_st {
   CURL*                  curl;
   struct curl_httppost* form0;
   struct curl_httppost* form1;
+  struct curl_slist*    slist;
   int                 buf_idx;
   int               backup_fd;
   int                 verbose;
