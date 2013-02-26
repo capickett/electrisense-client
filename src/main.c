@@ -128,6 +128,7 @@ int main(int argc, char* argv[]) {
   if ((shmid = shmget(IPC_PRIVATE, shm_size,
           IPC_CREAT | IPC_EXCL | 00600)) < 0) {
     /* shared mem get failed */
+    printf("Shared memory setup FAILED!\n");
     perror("shmget");
     exit(EXIT_FAILURE);
   }
@@ -159,13 +160,13 @@ int main(int argc, char* argv[]) {
   act.sa_handler = &handle_relay_death;
   act.sa_flags   = SA_NOCLDSTOP;
   if (sigaction(SIGCHLD, &act, NULL) < 0) {
-    printf("\n");
+    printf("FAILURE!\n");
     perror("signal");
     exit(EXIT_FAILURE);
   }
 
   if ((pid = fork()) < 0) {
-    printf("\n");
+    printf("FAILURE!\n");
     perror("fork");
     exit(EXIT_FAILURE);
   }
@@ -188,7 +189,7 @@ relay_start:
     relay_cleanup(&r);
   } else { /* consumer code */
     Consumer c;
-    if ((c = consumer_init(buffers, data_source, external_dir, verbose-1)) == NULL) {
+    if ((c = consumer_init(buffers, data_source, external_dir, (verbose-1 > 0))) == NULL) {
       perror("[C] consumer_init");
       exit(EXIT_FAILURE);
     }
@@ -198,15 +199,18 @@ relay_start:
         break;
       
       if (relay_needs_refork) {
-        printf("[C] Attempting to restart relay process...");
+        fprintf(stderr, "[C] Attempting to restart relay process...");
+        /* Needed to prevent fork from copying buffers & printing 2x */
+        fflush(stderr);
+        
         if ((pid = fork()) < 0) {
-          printf("\n");
+          fprintf(stderr, "FAILURE!\n");
           perror("fork");
           exit(EXIT_FAILURE);
         }
         relay_needs_refork = 0;
         if (pid != 0)
-          printf("done! (pid = %d)\n", pid);
+          fprintf(stderr, "done! (pid = %d)\n", pid);
         if (pid == 0)
           goto relay_start;
       }
@@ -221,7 +225,7 @@ relay_start:
     printf("Detaching shared memory buffer...");
   }
   if (shmdt((const void*) buffers) < 0) {
-    printf("\n");
+    printf("FAILURE!\n");
     perror("shmdt");
     exit(EXIT_FAILURE);
   }
@@ -233,8 +237,8 @@ relay_start:
     if (verbose)
       printf("[C] Removing shared memory...");
     if (shmctl(shmid, IPC_RMID, NULL) < 0) {
-      printf("\n[R] ");
-      perror("shmctl");
+      printf("FAILURE!\n");
+      perror("[C] shmctl");
       exit(EXIT_FAILURE);
     }
     if (verbose)
