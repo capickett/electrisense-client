@@ -190,7 +190,7 @@ relay_start:
     relay_cleanup(&r);*/
   } else { /* consumer code */
     Consumer c;
-    if ((c = consumer_init(buffers, data_source, external_dir, verbose-1)) == NULL) {
+    if ((c = consumer_init(buffers, data_source, external_dir, (verbose-1 > 0))) == NULL) {
       perror("[C] consumer_init");
       exit(EXIT_FAILURE);
     }
