@@ -108,7 +108,7 @@ int consumer_process(Consumer c) {
     
     if (cur_buf->size == cur_buf->capacity) {
       /* Still full. Write cur buf to SD, incremement error counter */
-      if (verbose) printf("[C] Buffer %d still full! Dumping current buffer\n", c->buf_idx ^ 1);
+      fprintf(stderr, "[C] Buffer %d still full! Dumping current buffer\n", c->buf_idx ^ 1);
       
       while (write(c->ext_fd, &c->buffers[c->buf_idx], sizeof(Buffer)) < 0) {
         if (errno == EAGAIN || errno == EINTR)
@@ -120,7 +120,7 @@ int consumer_process(Consumer c) {
       ++c->err_count;
       if (c->err_count == ERROR_LIMIT) {
         /* TODO: Notify server that we are writing to SD too much */
-        if (verbose) printf("[C] Error limit reached!\n");
+        fprintf(stderr, "[C] Error limit reached!\n");
         free(tmp_buf);
         return -1;
       }
