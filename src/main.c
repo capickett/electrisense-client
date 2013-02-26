@@ -175,8 +175,7 @@ int main(int argc, char* argv[]) {
 relay_start:
   if (pid == 0) { /* relay code */    
     Relay r;
-    /* TODO: Implement relay code */
-    /*if ((r = relay_init()) == NULL) {
+    if ((r = relay_init(buffers, server_path, external_dir, verbose-1)) == NULL) {
       perror("relay_init");
       exit(EXIT_FAILURE);
     }
@@ -184,10 +183,9 @@ relay_start:
     while (1) {
       if (relay_process(r) < 0)
         break;
-      
     }
 
-    relay_cleanup(&r);*/
+    relay_cleanup(&r);
   } else { /* consumer code */
     Consumer c;
     if ((c = consumer_init(buffers, data_source, external_dir, verbose-1)) == NULL) {

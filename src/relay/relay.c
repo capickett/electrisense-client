@@ -65,6 +65,7 @@ Relay relay_init(Buffer* b,
   curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
 
   if ((curl = curl_easy_init()) == NULL) { /* Init an easy_session */
+    curl_global_free();
     printf("[R] curl: init failed\n");
     return NULL;
   }
@@ -85,6 +86,9 @@ Relay relay_init(Buffer* b,
                CURLFORM_BUFFERLENGTH, r->buffers[1].capacity,
                CURLFORM_END);
   
+  if (verbose)
+    printf("[R] CURL forms initialized!\n");
+  
   headerlist = curl_slist_append(headerlist, buf);
   curl_easy_setopt(curl, CURLOPT_URL, r->server_url);
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
@@ -94,6 +98,9 @@ Relay relay_init(Buffer* b,
   r->form0 = buf0_formpost;
   r->form1 = buf1_formpost;
   r->slist =    headerlist;
+  
+  if (verbose)
+    printf("[R] Relay initialized!\n");
 
   return r;
 }
@@ -108,18 +115,29 @@ Relay relay_init(Buffer* b,
  * @see relay.h
  */
 int relay_process(Relay r) {
+  
+  int verbose = r->verbose;
   /* Step 1: check sd card */
+  
+  // TODO: Fix conditional statement
   if (0 /* check SD card */) {
-      pthread_t sd_thread;
-      if (pthread_create(&sd_thread, NULL, &overload_process, (void *)r) != 0) {
-        printf("[R] Failed to create child thread");
-        perror("pthread_create");
-        return -1;
-      }
-      if (pthread_detach(sd_thread) != 0) {
-        printf("[R] Failed to detach child thread");
-        return -1;
-      }
+    if (verbose)
+      printf("[R] Detected SD overflow, spawning child...\n");
+    pthread_t sd_thread;
+    if (pthread_create(&sd_thread, NULL, &overload_process, (void *)r) != 0) {
+      // TODO: Should we always print this? Or wrap in verbose?
+      // Also, same thing on line 135
+      printf("[R] Failed to create child thread");
+      perror("pthread_create");
+      return -1;
+    }
+    if (pthread_detach(sd_thread) != 0) {
+      printf("[R] Failed to detach child thread");
+      return -1;
+    }
+    if (verbose) {
+      printf("[R] Child successfully spawned");
+    }
   }
 
   /* Step 2: check buffer */
@@ -144,11 +162,13 @@ int relay_process(Relay r) {
   CURLcode res = curl_easy_perform(r->curl);
   if (res != CURLE_OK) {
     // TODO: Some error happened
+    printf("[R] unexpected error on curl perform");
     return -1;
   }
   // successful transfer, reset buffer and swap index
   r->buffers[r->buf_idx].size = 0;
   r->buf_idx = r->buf_idx ^ 1;
+
   return 0;
 }
 
