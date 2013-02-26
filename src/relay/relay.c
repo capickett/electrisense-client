@@ -65,7 +65,7 @@ Relay relay_init(Buffer* b,
   curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
 
   if ((curl = curl_easy_init()) == NULL) { /* Init an easy_session */
-    curl_global_free();
+    curl_global_cleanup();
     printf("[R] curl: init failed\n");
     return NULL;
   }
