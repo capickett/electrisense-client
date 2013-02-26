@@ -201,6 +201,9 @@ relay_start:
       
       if (relay_needs_refork) {
         printf("[C] Attempting to restart relay process...");
+        /* Needed to prevent fork from copying buffers & printing 2x */
+        fflush(stdout);
+        
         if ((pid = fork()) < 0) {
           printf("\n");
           perror("fork");
