@@ -177,7 +177,7 @@ relay_start:
   if (pid == 0) { /* relay code */    
     Relay r;
     if ((r = relay_init(buffers, server_path, external_dir, verbose-1)) == NULL) {
-      perror("relay_init");
+      fprintf(stderr, "[R] Relay init failed!\n");
       exit(EXIT_FAILURE);
     }
 
@@ -190,7 +190,7 @@ relay_start:
   } else { /* consumer code */
     Consumer c;
     if ((c = consumer_init(buffers, data_source, external_dir, (verbose-1 > 0))) == NULL) {
-      perror("[C] consumer_init");
+      fprintf(stderr, "[C] Consumer init failed!\n");
       exit(EXIT_FAILURE);
     }
 

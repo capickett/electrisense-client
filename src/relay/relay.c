@@ -28,7 +28,7 @@ static void* overload_process(void* args);
  * @see relay.h
  */
 Relay relay_init(Buffer* b,
-                 char* server_source,
+                 char* server_url,
                  char* backup_source,
                  int verbose) {
   Relay   r; /* Relay struct to create */
@@ -36,15 +36,19 @@ Relay relay_init(Buffer* b,
 
   if (verbose)
     printf("[R] Initializing relay...\n");
+  
+  /* FIXME: sdcard dump reading
   if ((b_fd = open(backup_source, O_RDWR)) < 0) {
     printf("[R] failed to establish communication with backup\n");
     perror(backup_source);
     return NULL;
   }
+  */
 
   r = (Relay) malloc(sizeof(struct relay_st));
   r->buffers = b;
   r->backup_fd = b_fd;
+  r->server_url = server_url;
   r->verbose = verbose;
   if (verbose)
     printf("[R] Relay initialized!\n");
@@ -66,7 +70,7 @@ Relay relay_init(Buffer* b,
 
   if ((curl = curl_easy_init()) == NULL) { /* Init an easy_session */
     curl_global_cleanup();
-    printf("[R] curl: init failed\n");
+    fprintf(stderr, "[R] curl: init failed\n");
     return NULL;
   }
   
@@ -74,14 +78,14 @@ Relay relay_init(Buffer* b,
   curl_formadd(&buf0_formpost,
                &buf0_lastptr,
                CURLFORM_COPYNAME, "sendfile",
-               CURLFORM_BUFFER, "foo",
+               CURLFORM_BUFFER, "buf0",
                CURLFORM_BUFFERPTR, r->buffers[0].data,
                CURLFORM_BUFFERLENGTH, r->buffers[0].capacity,
                CURLFORM_END);
   curl_formadd(&buf1_formpost,
                &buf1_lastptr,
                CURLFORM_COPYNAME, "sendfile",
-               CURLFORM_BUFFER, "bar",
+               CURLFORM_BUFFER, "buf1",
                CURLFORM_BUFFERPTR, r->buffers[1].data,
                CURLFORM_BUFFERLENGTH, r->buffers[1].capacity,
                CURLFORM_END);
@@ -119,8 +123,8 @@ int relay_process(Relay r) {
   int verbose = r->verbose;
   /* Step 1: check sd card */
   
-  // TODO: Fix conditional statement
-  if (0 /* check SD card */) {
+  /* TODO: Fix conditional statement
+  if (check SD card) {
     if (verbose)
       printf("[R] Detected SD overflow, spawning child...\n");
     pthread_t sd_thread;
@@ -139,6 +143,7 @@ int relay_process(Relay r) {
       printf("[R] Child successfully spawned");
     }
   }
+  */
 
   /* Step 2: check buffer */
     /* Anything there? send PAYLOAD_SIZE bytes to server */
@@ -147,22 +152,23 @@ int relay_process(Relay r) {
     /* send off bytes */
   
   if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
-    // switch buffers
-    r->buf_idx = r->buf_idx ^ 1;
+    r->buf_idx ^= 1; // switch buffers
   
   if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
-    // neither buffer is full, continue
-    return 0;
+    return 0; // neither buffer is full, work is done 
   
-  if (r->buf_idx == 0) {
-    curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, r->form0);
-  } else {
-    curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, r->form1);
-  }
+  // Set curl buffer pointer
+  curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, (r->buf_idx == 0)
+      ? r->form0
+      : r->form1);
+
   CURLcode res = curl_easy_perform(r->curl);
   if (res != CURLE_OK) {
     // TODO: Some error happened
-    printf("[R] unexpected error on curl perform");
+    fprintf(stderr, "[R] Error on curl HTTP request!\n");
+    fprintf(stderr, "[R] ");
+    fprintf(stderr, curl_easy_strerror(res));
+    fprintf(stderr, "\n");
     return -1;
   }
   // successful transfer, reset buffer and swap index
@@ -208,8 +214,8 @@ static size_t write_data(void* buffer, size_t size, size_t nmemb, void* userp) {
 
 static void* overload_process(void *arg) {
   // TODO: This.
-  Relay r = (Relay) arg;
+  // Relay r = (Relay) arg;
   /* get fd to SD stuff */
-  int sd_fd;
+  // int sd_fd;
   return NULL;
 }
