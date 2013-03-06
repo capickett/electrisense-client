@@ -213,6 +213,9 @@ relay_start:
           fprintf(stderr, "done! (pid = %d)\n", pid);
         if (pid == 0)
           goto relay_start;
+      } else {
+        /* Wait for 1/100th of a second to simulate slow data collection */
+        usleep(10000U);
       }
     }
 

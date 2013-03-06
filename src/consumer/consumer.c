@@ -114,10 +114,13 @@ int consumer_process(Consumer c) {
         if (errno == EAGAIN || errno == EINTR)
           continue;
 
-        perror("write");
+        perror("[C] write");
+        free(tmp_buf);
         return -1;
       }
+      c->buffers[c->buf_idx].size = 0;
       ++c->err_count;
+
       if (c->err_count == ERROR_LIMIT) {
         /* TODO: Notify server that we are writing to SD too much */
         fprintf(stderr, "[C] Error limit reached!\n");

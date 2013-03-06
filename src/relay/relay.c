@@ -186,13 +186,14 @@ void relay_cleanup(Relay* r) {
   if ((*r)->verbose)
     printf("[R] Relay clean up...\n");
 
+  /* FIXME: sdcard backup
   if (close((*r)->backup_fd) < 0) {
-    printf("[R] ");
-    perror("close");
+    perror("[R] close");
   }
+  */
 
   if ((*r)->verbose)
-    printf("[R] Cleaning up CURL request");
+    printf("[R] Cleaning up CURL request\n");
 
   curl_easy_cleanup((*r)->curl);
   curl_slist_free_all((*r)->slist);
@@ -204,7 +205,7 @@ void relay_cleanup(Relay* r) {
     printf("[R] Relay destroyed!\n");
   }
 
-  free((void *)(*r));
+  free(*r);
   *r = NULL;
 }
 
