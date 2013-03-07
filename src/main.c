@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
@@ -101,7 +102,7 @@ int main(int argc, char* argv[]) {
   Buffer* buffers; /* shared memory buffers */
   char* data_source  = NULL; /* data source for consumer */
   char* server_path  = NULL; /* server path for relay */
-  char* external_dir = ""; /* external dir for consumer */
+  char* external_dir = NULL; /* external dir for consumer */
   verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   struct sigaction act; /* Used to add the relay death signal handler */
   relay_needs_refork = 0;
@@ -306,6 +307,11 @@ static void get_args(int argc, char** argv, char** data_source,
       case '?':
         break;
     }
+  }
+  if (*external_dir == NULL) {
+    printf("BOO");
+    *external_dir = (char*) malloc(2);
+    strcpy(*external_dir, ".");
   }
 }
 

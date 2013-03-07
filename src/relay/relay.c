@@ -32,7 +32,7 @@ Relay relay_init(Buffer* b,
                  char* backup_source,
                  int verbose) {
   Relay   r; /* Relay struct to create */
-  int  b_fd; /* fd for SD card communication */
+  /* int  b_fd; *//* fd for SD card communication */
 
   if (verbose)
     printf("[R] Initializing relay...\n");
@@ -47,7 +47,7 @@ Relay relay_init(Buffer* b,
 
   r = (Relay) malloc(sizeof(struct relay_st));
   r->buffers = b;
-  r->backup_fd = b_fd;
+  /* r->backup_fd = b_fd; */
   r->server_url = server_url;
   r->verbose = verbose;
   if (verbose)

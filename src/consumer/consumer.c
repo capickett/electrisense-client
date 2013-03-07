@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "consumer.h"
@@ -22,37 +23,41 @@
 static size_t get_read_size(Consumer c);
 
 
-Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose) {
-  Consumer c;
-  int      fd;
-  int      ext_fd;
-  char*    external_dump_path;
+Consumer consumer_init(Buffer *b, char *data_source, char *ext_dump, int verbose) {
+  Consumer   c;
+  int        fd;
   
   if (verbose) printf("[C] Initializing consumer...\n");
-  
   if ((fd = open(data_source, O_RDWR | O_NOCTTY | O_SYNC)) < 0)
     return NULL;
-  
   if (verbose) printf("[C] Data source opened. (fd = %d)\n", fd);
 
-  external_dump_path = (char*) malloc(strlen(ext_dump) + 12 + 6 + 1);
-  strcpy(external_dump_path, ext_dump);
-  strcat(external_dump_path, "client-dump_XXXXXX");
-  
-  if ((ext_fd = mkstemp(external_dump_path)) < 0)
-    return NULL;
-
-  free(external_dump_path);
-
-  if (verbose) printf("[C] External dump file opened. (fd = %d)\n", ext_fd);
+  /* Check if path exists */
+  struct stat dump_stat;
+  if (stat(ext_dump, &dump_stat) < 0) {
+    if (errno == ENOENT) {
+      fprintf(stderr, "[C] ERROR: Supplied external directory does not exist!\n");
+      return NULL;
+    }
+  } else {
+    if (!S_ISDIR(dump_stat.st_mode)) {
+      fprintf(stderr, "[C] ERROR: Supplied external directory is not a directory!\n");
+      return NULL;  
+    }
+  }
 
   c = (Consumer) malloc(sizeof(struct consumer_st));
+
   c->buffers = b;
   c->data_fd = fd;
   c->verbose = verbose;
   c->buf_idx = 0;
-  c->ext_fd  = ext_fd;
-  
+
+  c->dump_path = (char*) malloc(strlen(ext_dump) + 80 + 1);
+  strcpy(c->dump_path, ext_dump);
+  if (ext_dump[strlen(ext_dump) - 1] != '/') strcat(c->dump_path, "/");
+
+
   if (verbose) printf("[C] Consumer initialized!\n");
 
   return c;
@@ -107,17 +112,34 @@ int consumer_process(Consumer c) {
     cur_buf = &c->buffers[c->buf_idx ^ 1];
     
     if (cur_buf->size == cur_buf->capacity) {
+        int dump_fd;
+        time_t     rawtime;
+        struct tm *timeinfo;
+        char       time_str[80];
       /* Still full. Write cur buf to SD, incremement error counter */
-      fprintf(stderr, "[C] Buffer %d still full! Dumping current buffer\n", c->buf_idx ^ 1);
+      fprintf(stderr, "[C] WARNING: Buffer %d still full! Dumping current buffer\n", c->buf_idx ^ 1);
       
-      while (write(c->ext_fd, &c->buffers[c->buf_idx], sizeof(Buffer)) < 0) {
+      time(&rawtime);
+      timeinfo = localtime(&rawtime);
+      strftime(time_str, 79, "client-dump_%s.dat", timeinfo);
+      char *dump_file = (char*) malloc(strlen(c->dump_path) + strlen(time_str) + 1);
+      strcpy(dump_file, c->dump_path);
+      strcat(dump_file, time_str);
+      if ((dump_fd = open(dump_file, O_CREAT | O_EXCL | O_WRONLY)) < 0) {
+        fprintf(stderr, "[C] ERROR: Error writing to \"%s\"\n", dump_file);
+        perror("[C] ");
+      }
+
+      while (write(dump_fd, &c->buffers[c->buf_idx], sizeof(Buffer)) < 0) {
         if (errno == EAGAIN || errno == EINTR)
           continue;
 
         perror("[C] write");
+        close(dump_fd);
         free(tmp_buf);
         return -1;
       }
+      close(dump_fd);
       c->buffers[c->buf_idx].size = 0;
       ++c->err_count;
 
@@ -148,12 +170,8 @@ void consumer_cleanup(Consumer* c) {
     perror("close");
   }
 
-  if (close((*c)->ext_fd) < 0) {
-    printf("[C] ");
-    perror("close");
-  }
-
   if ((*c)->verbose) printf("[C] Consumer destroyed!\n");
+  free((*c)->dump_path);
   free(*c);
   *c = NULL;
 }

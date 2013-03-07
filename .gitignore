@@ -2,3 +2,5 @@
 *.swp
 *~
 client-dump*
+*.sublime-workspace
+
