@@ -21,21 +21,21 @@
 
 struct relay_st {
   /* Any operational parameters go here */
-  Buffer*             buffers;
-  char*            server_url;
-  CURL*                  curl;
+  Buffer* buffers;
+  char* server_url;
+  CURL* curl;
   struct curl_httppost* form0;
   struct curl_httppost* form1;
-  struct curl_slist*    slist;
-  int                 buf_idx;
-  int               backup_fd;
-  int                 verbose;
+  struct curl_slist* slist;
+  int buf_idx;
+  int backup_fd;
+  int verbose;
 };
 
 /**
  * A handle used to store any operational parameters of the relay.
  */
-typedef struct relay_st* Relay;
+typedef struct relay_st Relay;
 
 /**
  * Initializes the relay and returns a handle to the configured relay instance.
@@ -48,7 +48,7 @@ typedef struct relay_st* Relay;
  * caller's responsibility to free the Relay handler by calling
  * #relay_cleanup.
  */
-Relay relay_init();
+Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose);
 
 /**
  * Perform one unit of work.
@@ -72,7 +72,7 @@ Relay relay_init();
  * @return 0 if successful, -1 if there is an error
  * @see #relay_init
  */
-int relay_process(Relay r);
+int relay_process(Relay *r);
 
 /**
  * Frees the relay handle and performs any additional cleanup required to shut
@@ -81,6 +81,6 @@ int relay_process(Relay r);
  *
  * @param r The handle to be freed
  */
-void relay_cleanup(Relay* r);
+void relay_cleanup(Relay **r);
 
 #endif

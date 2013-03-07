@@ -15,6 +15,8 @@ BINS = bin/client bin/x86_client
 .SECONDARY:
 
 all: $(BINS)
+x86: bin/x86_client
+mips: bin/client
 obj/main.o obj/x86_main.o: src/main.c
 obj/consumer.o obj/x86_consumer.o: src/consumer/consumer.c src/consumer/consumer.h
 obj/relay.o obj/x86_relay.o: src/relay/relay.c src/relay/relay.h

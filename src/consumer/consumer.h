@@ -27,17 +27,17 @@
 struct consumer_st {
   /* Any operational parameters go here */
   Buffer *buffers; /**< A pointer to two buffers that make the double buffer */
-  int     buf_idx; /**< The current buffer in use by the consumer */
-  int     data_fd; /**< A file descriptor for the source of data */
+  int buf_idx; /**< The current buffer in use by the consumer */
+  int data_fd; /**< A file descriptor for the source of data */
   char *dump_path; /**< The path to the external buffer dump */
-  int   err_count; /**< A count of the times consumer has written to ext_fd */
-  int     verbose; /**< A flag to enable verbose console output */
+  int err_count; /**< A count of the times consumer has written to ext_fd */
+  int verbose; /**< A flag to enable verbose console output */
 };
 
 /**
  * A handle used to store any operational parameters of the consumer.
  */
-typedef struct consumer_st* Consumer;
+typedef struct consumer_st Consumer;
 
 /**
  * Initializes the consumer and returns a handle to the configured consumer
@@ -58,7 +58,8 @@ typedef struct consumer_st* Consumer;
  * caller's responsibility to free the Consumer handler by calling
  * #consumer_cleanup.
  */
-Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose);
+Consumer* consumer_init(Buffer* b, char* data_source, char* ext_dump,
+    int verbose);
 
 /**
  * Perform one unit of work.
@@ -82,7 +83,7 @@ Consumer consumer_init(Buffer* b, char* data_source, char* ext_dump, int verbose
  * @return 0 if successful, -1 if there is an error
  * @see #consumer_init
  */
-int consumer_process(Consumer handle);
+int consumer_process(Consumer *handle);
 
 /**
  * Frees the consumer handle and performs any additional cleanup required to
@@ -91,6 +92,6 @@ int consumer_process(Consumer handle);
  *
  * @param handle The handle to be freed
  */
-void consumer_cleanup(Consumer* handle);
+void consumer_cleanup(Consumer **handle);
 
 #endif

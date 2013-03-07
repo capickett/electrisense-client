@@ -3,4 +3,6 @@
 *~
 client-dump*
 *.sublime-workspace
-
+.project
+.cproject
+.settings

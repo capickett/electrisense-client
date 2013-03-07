@@ -38,7 +38,6 @@
 #include "relay/relay.h"
 #include "shared/buffer.h"
 
-
 /**
  * The options available for invoking the program from the command line.
  * - *server-path*: 
@@ -51,13 +50,10 @@
  *       A flag to increase the frequency and detail of logging by the program.
  *       Useful for debugging.
  */
-static struct option long_options[] = {
-  {"server-path",  required_argument, NULL, 's'},
-  {"data-source",  required_argument, NULL, 'd'},
-  {"external-dir", required_argument, NULL, 'e'},
-  {"help",         no_argument,       NULL, 'h'},
-  {"verbose",      no_argument,       NULL, 'v'}
-};
+static struct option long_options[] = { { "server-path", required_argument,
+    NULL, 's' }, { "data-source", required_argument, NULL, 'd' }, {
+    "external-dir", required_argument, NULL, 'e' }, { "help", no_argument, NULL,
+    'h' }, { "verbose", no_argument, NULL, 'v' } };
 
 /**
  * A flag to enable/disable verbose debugging output at runtime.
@@ -83,14 +79,12 @@ static int pid;
  */
 static int relay_needs_refork;
 
-
 static void usage();
 
 static void get_args(int argc, char** argv, char** data_source,
     char** server_path, char** external_dir, int* verbose);
-    
-void handle_relay_death(int sig);
 
+void handle_relay_death(int sig);
 
 /**
  * Main entrypoint into the carambola client program.
@@ -100,16 +94,16 @@ int main(int argc, char* argv[]) {
   int shmid; /* shared memory id */
   size_t shm_size = sizeof(Buffer) * 2; /* shared memory size */
   Buffer* buffers; /* shared memory buffers */
-  char* data_source  = NULL; /* data source for consumer */
-  char* server_path  = NULL; /* server path for relay */
+  char* data_source = NULL; /* data source for consumer */
+  char* server_path = NULL; /* server path for relay */
   char* external_dir = NULL; /* external dir for consumer */
   verbose = 0; /* Verbosity level: 0 = not verbose, 2+ = very verbose */
   struct sigaction act; /* Used to add the relay death signal handler */
   relay_needs_refork = 0;
 
   get_args(argc, argv, &data_source, &server_path, &external_dir, &verbose);
-  
-  if (data_source == NULL || server_path == NULL) {
+
+  if (data_source == NULL || server_path == NULL ) {
     usage();
     exit(EXIT_FAILURE);
   }
@@ -126,8 +120,8 @@ int main(int argc, char* argv[]) {
   /* Set up shared memory buffer */
   if (verbose)
     printf("Setting up shared memory buffer (size = %zd)...\n", shm_size);
-  if ((shmid = shmget(IPC_PRIVATE, shm_size,
-          IPC_CREAT | IPC_EXCL | 00600)) < 0) {
+  if ((shmid = shmget(IPC_PRIVATE, shm_size, IPC_CREAT | IPC_EXCL | 00600))
+      < 0) {
     /* shared mem get failed */
     printf("Shared memory setup FAILED!\n");
     perror("shmget");
@@ -147,20 +141,20 @@ int main(int argc, char* argv[]) {
     printf("  attached. (addr  = %p)\nShared memory setup done!\n", buffers);
   }
   /* Shared memory buffer set up */
-  
+
   if (verbose)
     printf("\n");
-  
+
   /* fork */
   if (verbose) {
     printf("[C] Forking relay as child process...");
     /* Needed to prevent fork from copying buffers & printing 2x */
     fflush(stdout);
   }
-  
+
   act.sa_handler = &handle_relay_death;
-  act.sa_flags   = SA_NOCLDSTOP;
-  if (sigaction(SIGCHLD, &act, NULL) < 0) {
+  act.sa_flags = SA_NOCLDSTOP;
+  if (sigaction(SIGCHLD, &act, NULL ) < 0) {
     printf("FAILURE!\n");
     perror("signal");
     exit(EXIT_FAILURE);
@@ -173,11 +167,11 @@ int main(int argc, char* argv[]) {
   }
   if ((pid != 0) && verbose)
     printf("done! (pid = %d)\n", pid);
-  
-relay_start:
-  if (pid == 0) { /* relay code */    
-    Relay r;
-    if ((r = relay_init(buffers, server_path, external_dir, verbose-1)) == NULL) {
+
+  relay_start: if (pid == 0) { /* relay code */
+    Relay *r;
+    if ((r = relay_init(buffers, server_path, external_dir, verbose - 1))
+        == NULL ) {
       fprintf(stderr, "[R] Relay init failed!\n");
       exit(EXIT_FAILURE);
     }
@@ -189,8 +183,9 @@ relay_start:
 
     relay_cleanup(&r);
   } else { /* consumer code */
-    Consumer c;
-    if ((c = consumer_init(buffers, data_source, external_dir, (verbose-1 > 0))) == NULL) {
+    Consumer *c;
+    if ((c = consumer_init(buffers, data_source, external_dir,
+        (verbose - 1 > 0))) == NULL ) {
       fprintf(stderr, "[C] Consumer init failed!\n");
       exit(EXIT_FAILURE);
     }
@@ -198,12 +193,12 @@ relay_start:
     while (1) {
       if (consumer_process(c) < 0)
         break;
-      
+
       if (relay_needs_refork) {
         fprintf(stderr, "[C] Attempting to restart relay process...");
         /* Needed to prevent fork from copying buffers & printing 2x */
         fflush(stderr);
-        
+
         if ((pid = fork()) < 0) {
           fprintf(stderr, "FAILURE!\n");
           perror("fork");
@@ -240,18 +235,18 @@ relay_start:
   if (pid != 0) { /* Remove shared memory and reap child */
     if (verbose)
       printf("[C] Removing shared memory...");
-    if (shmctl(shmid, IPC_RMID, NULL) < 0) {
+    if (shmctl(shmid, IPC_RMID, NULL ) < 0) {
       printf("FAILURE!\n");
       perror("[C] shmctl");
       exit(EXIT_FAILURE);
     }
     if (verbose)
       printf("done!\n");
-    
+
     if (verbose)
       printf("[C] Waiting on relay to exit...");
-    signal(SIGCHLD, SIG_IGN);
-    wait(NULL);
+    signal(SIGCHLD, SIG_IGN );
+    wait(NULL );
     if (verbose)
       printf("done!\n");
   }
@@ -261,54 +256,59 @@ relay_start:
 
 /** Print out help message */
 static void usage() {
-  fprintf(stderr, "Usage: client [-d|--data-source=<path>] [-s|--server-path=<path>]\n");
+  fprintf(stderr,
+      "Usage: client [-d|--data-source=<path>] [-s|--server-path=<path>]\n");
   fprintf(stderr, "              [-v|--verbose [-v|--verbose]] [--help]\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "REQUIRED:\n");
-  fprintf(stderr, "  -d, --data-source=PATH  sets the data path for the consumer\n");
-  fprintf(stderr, "  -e, --external-dir=PATH sets the dump path for the consumer\n");
-  fprintf(stderr, "  -s, --server-path=PATH  sets the server uri for the relay\n");
+  fprintf(stderr,
+      "  -d, --data-source=PATH  sets the data path for the consumer\n");
+  fprintf(stderr,
+      "  -e, --external-dir=PATH sets the dump path for the consumer\n");
+  fprintf(stderr,
+      "  -s, --server-path=PATH  sets the server uri for the relay\n");
   fprintf(stderr, "\n");
   fprintf(stderr, "OPTIONAL:\n");
   fprintf(stderr, "      --help     display this help and exit\n");
-  fprintf(stderr, "  -v, --verbose  increase program output. Use twice for more output\n");
+  fprintf(stderr,
+      "  -v, --verbose  increase program output. Use twice for more output\n");
 }
 
 /** Get all args from the command line */
 static void get_args(int argc, char** argv, char** data_source,
     char** server_path, char** external_dir, int* verbose) {
   int c;
-  while ((c = getopt_long(argc, argv, "d:s:ve:", long_options, NULL))) {
+  while ((c = getopt_long(argc, argv, "d:s:ve:", long_options, NULL ))) {
     if (c == -1)
       break; /* Done processing optargs */
 
     switch (c) {
-      case 'h': /* help option */
-        usage();
-        exit(EXIT_SUCCESS);
-        break;
+    case 'h': /* help option */
+      usage();
+      exit(EXIT_SUCCESS);
+      break;
 
-      case 'd': /* Data source option */
-        *data_source = optarg;
-        break;
+    case 'd': /* Data source option */
+      *data_source = optarg;
+      break;
 
-      case 'e': /* External directory option */
-        *external_dir = optarg;
-        break;
+    case 'e': /* External directory option */
+      *external_dir = optarg;
+      break;
 
-      case 's': /* Server path option */
-        *server_path = optarg;
-        break;
+    case 's': /* Server path option */
+      *server_path = optarg;
+      break;
 
-      case 'v': /* verbose flag */
-        ++(*verbose);
-        break;
+    case 'v': /* verbose flag */
+      ++(*verbose);
+      break;
 
-      case '?':
-        break;
+    case '?':
+      break;
     }
   }
-  if (*external_dir == NULL) {
+  if (*external_dir == NULL ) {
     printf("BOO");
     *external_dir = (char*) malloc(2);
     strcpy(*external_dir, ".");
@@ -320,21 +320,20 @@ static void get_args(int argc, char** argv, char** data_source,
  *
  * If the child process exits abnormally, or exits with an error code, then
  * make an attempt to respawn the process.
- * 
- * @todo Respawn child process 
  */
 void handle_relay_death(int sig) {
   int status;
-  
+
   if (verbose)
     printf("[C] Received child death signal\n");
-  
+
   if (waitpid(-1, &status, WNOHANG) > 0) {
-  
+
     if (WIFEXITED(status)) {
-      printf("[C] Relay exited normally with status: %d\n", WEXITSTATUS(status));
+      printf("[C] Relay exited normally with status: %d\n",
+          WEXITSTATUS(status));
     }
-    
+
     if (WIFSIGNALED(status)) {
       printf("[C] Relay was terminated by signal: %d\n", WTERMSIG(status));
     }

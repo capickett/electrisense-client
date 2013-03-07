@@ -34,7 +34,7 @@ struct buffer_st {
   /** The capacity of the buffer */
   size_t capacity;
   /** Data buffer */
-  char data[__BUFFER_CAPACITY];
+  char data[__BUFFER_CAPACITY ];
 };
 
 typedef struct buffer_st Buffer;

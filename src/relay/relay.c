@@ -27,25 +27,12 @@ static void* overload_process(void* args);
  * Initializes the relay
  * @see relay.h
  */
-Relay relay_init(Buffer* b,
-                 char* server_url,
-                 char* backup_source,
-                 int verbose) {
-  Relay   r; /* Relay struct to create */
-  /* int  b_fd; *//* fd for SD card communication */
+Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose) {
+  Relay* r; /* Relay struct to create */
 
-  if (verbose)
-    printf("[R] Initializing relay...\n");
-  
-  /* FIXME: sdcard dump reading
-  if ((b_fd = open(backup_source, O_RDWR)) < 0) {
-    printf("[R] failed to establish communication with backup\n");
-    perror(backup_source);
-    return NULL;
-  }
-  */
+  if (verbose) printf("[R] Initializing relay...\n");
 
-  r = (Relay) malloc(sizeof(struct relay_st));
+  r = (Relay*) malloc(sizeof(struct relay_st));
   r->buffers = b;
   /* r->backup_fd = b_fd; */
   r->server_url = server_url;
@@ -118,7 +105,7 @@ Relay relay_init(Buffer* b,
  *     and send it to a remote server
  * @see relay.h
  */
-int relay_process(Relay r) {
+int relay_process(Relay *r) {
   
   int verbose = r->verbose;
   /* Step 1: check sd card */
@@ -182,7 +169,7 @@ int relay_process(Relay r) {
  * Free the relay handle and clean up for shutdown
  * @see relay.h
  */
-void relay_cleanup(Relay* r) {
+void relay_cleanup(Relay **r) {
   if ((*r)->verbose)
     printf("[R] Relay clean up...\n");
 
