@@ -27,9 +27,9 @@
 struct consumer_st {
   /* Any operational parameters go here */
   Buffer *buffers; /**< A pointer to two buffers that make the double buffer */
+  char *dump_path; /**< The path to the external buffer dump */
   int buf_idx; /**< The current buffer in use by the consumer */
   int data_fd; /**< A file descriptor for the source of data */
-  char *dump_path; /**< The path to the external buffer dump */
   int err_count; /**< A count of the times consumer has written to ext_fd */
   int verbose; /**< A flag to enable verbose console output */
 };

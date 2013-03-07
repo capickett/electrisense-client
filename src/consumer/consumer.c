@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,22 +35,6 @@ Consumer* consumer_init(Buffer *b, char *data_source, char *ext_dump,
   if (verbose)
     printf("[C] Data source opened. (fd = %d)\n", fd);
 
-  /* Check if path exists */
-  struct stat dump_stat;
-  if (stat(ext_dump, &dump_stat) < 0) {
-    if (errno == ENOENT) {
-      fprintf(stderr,
-          "[C] ERROR: Supplied external directory does not exist!\n");
-      return NULL ;
-    }
-  } else {
-    if (!S_ISDIR(dump_stat.st_mode)) {
-      fprintf(stderr,
-          "[C] ERROR: Supplied external directory is not a directory!\n");
-      return NULL ;
-    }
-  }
-
   c = (Consumer*) malloc(sizeof(struct consumer_st));
 
   c->buffers = b;
@@ -57,7 +42,8 @@ Consumer* consumer_init(Buffer *b, char *data_source, char *ext_dump,
   c->verbose = verbose;
   c->buf_idx = 0;
 
-  c->dump_path = (char*) malloc(strlen(ext_dump) + 80 + 1);
+  /* +2 for optional slash */
+  c->dump_path = (char*) malloc(strlen(ext_dump) + 2);
   strcpy(c->dump_path, ext_dump);
   if (ext_dump[strlen(ext_dump) - 1] != '/')
     strcat(c->dump_path, "/");
@@ -123,17 +109,19 @@ int consumer_process(Consumer *c) {
 
     if (cur_buf->size == cur_buf->capacity) {
       int dump_fd;
-      time_t rawtime;
+      struct timeval tv;
       struct tm *timeinfo;
+      char fmt_str[80];
       char time_str[80];
       /* Still full. Write cur buf to SD, incremement error counter */
       fprintf(stderr,
           "[C] WARNING: Buffer %d still full! Dumping current buffer\n",
           c->buf_idx ^ 1);
 
-      time(&rawtime);
-      timeinfo = localtime(&rawtime);
-      strftime(time_str, 79, "client-dump_%s.dat", timeinfo);
+      gettimeofday(&tv, NULL);
+      timeinfo = localtime(&tv.tv_sec);
+      strftime(fmt_str, sizeof fmt_str, "client-dump_%s%%06u.dat", timeinfo);
+      snprintf(time_str, sizeof time_str, fmt_str, tv.tv_usec);
       char *dump_file = (char*) malloc(
           strlen(c->dump_path) + strlen(time_str) + 1);
       strcpy(dump_file, c->dump_path);

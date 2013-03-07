@@ -21,14 +21,14 @@
 
 struct relay_st {
   /* Any operational parameters go here */
-  Buffer* buffers;
-  char* server_url;
-  CURL* curl;
+  Buffer *buffers;
+  char *server_url;
+  char *dump_dir;
+  CURL *curl;
   struct curl_httppost* form0;
   struct curl_httppost* form1;
   struct curl_slist* slist;
   int buf_idx;
-  int backup_fd;
   int verbose;
 };
 

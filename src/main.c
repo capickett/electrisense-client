@@ -23,6 +23,8 @@
  *   handle SD card data.
  */
 
+#include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
 #include <stdio.h>
@@ -37,6 +39,7 @@
 #include "consumer/consumer.h"
 #include "relay/relay.h"
 #include "shared/buffer.h"
+#include <sys/stat.h>
 
 /**
  * The options available for invoking the program from the command line.
@@ -117,6 +120,22 @@ int main(int argc, char* argv[]) {
     printf("\n");
   }
 
+  /* Check if path exists */
+  struct stat dump_stat;
+  if (stat(external_dir, &dump_stat) < 0) {
+    if (errno == ENOENT) {
+      fprintf(stderr,
+          "[C] ERROR: Supplied external directory does not exist!\n");
+      exit(EXIT_FAILURE);
+    }
+  } else {
+    if (!S_ISDIR(dump_stat.st_mode)) {
+      fprintf(stderr,
+          "[C] ERROR: Supplied external directory is not a directory!\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
   /* Set up shared memory buffer */
   if (verbose)
     printf("Setting up shared memory buffer (size = %zd)...\n", shm_size);
@@ -170,7 +189,7 @@ int main(int argc, char* argv[]) {
 
   relay_start: if (pid == 0) { /* relay code */
     Relay *r;
-    if ((r = relay_init(buffers, server_path, external_dir, verbose - 1))
+    if ((r = relay_init(buffers, server_path, external_dir, (verbose - 1) > 0))
         == NULL ) {
       fprintf(stderr, "[R] Relay init failed!\n");
       exit(EXIT_FAILURE);
