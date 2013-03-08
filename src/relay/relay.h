@@ -25,9 +25,11 @@ struct relay_st {
   char *server_url;
   char *dump_dir;
   CURL *curl;
-  struct curl_httppost* form0;
-  struct curl_httppost* form1;
-  struct curl_slist* slist;
+  struct curl_httppost *form0;
+  struct curl_httppost *form1;
+  struct curl_slist *slist;
+  pthread_t *sd_thread;
+  pthread_mutex_t sd_thread_lock;
   int buf_idx;
   int verbose;
 };

@@ -83,10 +83,13 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
   curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
 
+  /* Add slash at the end if not there */
   r->dump_dir = (char*) malloc(strlen(backup_source) + 2);
   strcpy(r->dump_dir, backup_source);
   if (backup_source[strlen(backup_source) - 1] != '/')
     strcat(r->dump_dir, "/");
+
+  pthread_mutex_init(&r->sd_thread_lock, NULL);
 
   r->curl = curl;
   r->form0 = buf0_formpost;
@@ -113,44 +116,49 @@ int relay_process(Relay *r) {
   int verbose = r->verbose;
 
   /* Step 1: check sd card */
-  if (verbose)
-    printf("[R] Checking dump directory...");
-  int n;
-  struct dirent **namelist;
-  if ((n = scandir(r->dump_dir, &namelist, dump_filter, alphasort)) < 0) {
-    printf("ERROR!\n");
-    fprintf(stderr, "[R] Error scanning dump directory!");
-    perror("[R] scandir");
-    return -1;
-  }
+  pthread_mutex_lock(&r->sd_thread_lock);
+  int thread_running = r->sd_thread == NULL;
+  pthread_mutex_unlock(&r->sd_thread_lock);
 
-  if (n > 0) {
+  if (!thread_running) {
     if (verbose)
-      printf("[R] Detected SD overflow, spawning thread...");
-    pthread_t sd_thread;
-    struct handler_st *handle = (struct handler_st*) malloc(
-        sizeof(struct handler_st));
-    if (handle == NULL ) {
+      printf("[R] Checking dump directory...");
+    int n;
+    struct dirent **namelist;
+    if ((n = scandir(r->dump_dir, &namelist, dump_filter, alphasort)) < 0) {
       printf("ERROR!\n");
-      perror("[R] malloc");
+      fprintf(stderr, "[R] Error scanning dump directory!");
+      perror("[R] scandir");
       return -1;
     }
-    handle->r = r;
-    handle->namelist = namelist;
-    handle->n = n;
-    if (pthread_create(&sd_thread, NULL, handle_dump_file, (void *) handle)
-        != 0) {
-      printf("ERROR!\n");
-      fprintf(stderr, "[R] Failed to create child thread!\n");
-      perror("[R] pthread_create");
-      return -1;
-    }
-    if (pthread_detach(sd_thread) != 0) {
-      printf("[R] Failed to detach child thread");
-      return -1;
-    }
-    if (verbose) {
-      printf("done!\n");
+
+    if (n > 0) {
+      if (verbose)
+        printf("[R] Detected SD overflow, spawning thread...");
+      struct handler_st *handle = (struct handler_st*) malloc(
+          sizeof(struct handler_st));
+      if (handle == NULL ) {
+        printf("ERROR!\n");
+        perror("[R] malloc");
+        return -1;
+      }
+      handle->r = r;
+      handle->namelist = namelist;
+      handle->n = n;
+      if (pthread_create(r->sd_thread, NULL, handle_dump_file, (void *) handle)
+          != 0) {
+        printf("ERROR!\n");
+        fprintf(stderr, "[R] Failed to create child thread!\n");
+        perror("[R] pthread_create");
+        return -1;
+      }
+      if (pthread_detach(*(r->sd_thread)) != 0) {
+        printf("[R] Failed to detach child thread");
+        return -1;
+      }
+      if (verbose) {
+        printf("done!\n");
+      }
     }
   }
 
@@ -233,7 +241,7 @@ static void* handle_dump_file(void *arg) {
   CURLcode res = curl_easy_perform(r->curl);
   if (res != CURLE_OK) {
     /* TODO: Can we retry on certain errors? */
-    fprintf(stderr, "[R] Error on curl HTTP request!\n");
+    fprintf(stderr, "[R] Error on sending curl dump!\n");
     fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
     return (void*) -1;
   }
@@ -247,6 +255,10 @@ static void* handle_dump_file(void *arg) {
       perror("[R] unlink");
     }
   }
+
+  pthread_mutex_lock(&r->sd_thread_lock);
+  r->sd_thread = NULL;
+  pthread_mutex_unlock(&r->sd_thread_lock);
 
   return (void*) 0;
 }
