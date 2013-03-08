@@ -89,8 +89,9 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
   if (backup_source[strlen(backup_source) - 1] != '/')
     strcat(r->dump_dir, "/");
 
-  pthread_mutex_init(&r->sd_thread_lock, NULL);
-  r->sd_thread = (pthread_t*) malloc(sizeof(pthread_t));
+  pthread_mutex_init(&r->sd_thread_lock, NULL );
+  r->threadid = (pthread_t*) malloc(sizeof(pthread_t));
+  r->sd_thread_running = 0;
 
   r->curl = curl;
   r->form0 = buf0_formpost;
@@ -113,12 +114,11 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
  * @see relay.h
  */
 int relay_process(Relay *r) {
-
   int verbose = r->verbose;
 
   /* Step 1: check sd card */
   pthread_mutex_lock(&r->sd_thread_lock);
-  int thread_running = (r->sd_thread != NULL);
+  int thread_running = r->sd_thread_running;
   pthread_mutex_unlock(&r->sd_thread_lock);
 
   if (!thread_running) {
@@ -132,7 +132,7 @@ int relay_process(Relay *r) {
 
     if (n > 0) {
       if (verbose)
-        printf("[R] Detected SD overflow, spawning thread...");
+        printf("[R] Detected SD overflow, spawning thread.\n");
       struct handler_st *handle = (struct handler_st*) malloc(
           sizeof(struct handler_st));
       if (handle == NULL ) {
@@ -143,19 +143,12 @@ int relay_process(Relay *r) {
       handle->r = r;
       handle->namelist = namelist;
       handle->n = n;
-      if (pthread_create(r->sd_thread, NULL, &handle_dump_file, (void *) &handle)
+      if (pthread_create(r->threadid, NULL, &handle_dump_file, (void *) &handle)
           != 0) {
         printf("ERROR!\n");
         fprintf(stderr, "[R] Failed to create child thread!\n");
         perror("[R] pthread_create");
         return -1;
-      }
-      if (pthread_detach(*(r->sd_thread)) != 0) {
-        printf("[R] Failed to detach child thread");
-        return -1;
-      }
-      if (verbose) {
-        printf("done!\n");
       }
     }
   }
@@ -198,6 +191,7 @@ void relay_cleanup(Relay **r) {
     printf("[R] Relay clean up...\n");
 
   free((*r)->dump_dir);
+  free((*r)->threadid);
 
   if ((*r)->verbose)
     printf("[R] Cleaning up CURL request\n");
@@ -207,6 +201,8 @@ void relay_cleanup(Relay **r) {
   curl_formfree((*r)->form0);
   curl_formfree((*r)->form1);
   curl_global_cleanup();
+
+  pthread_mutex_destroy(&(*r)->sd_thread_lock);
 
   if ((*r)->verbose) {
     printf("[R] Relay destroyed!\n");
@@ -228,37 +224,45 @@ static void* handle_dump_file(void *arg) {
   struct curl_httppost *file_formpost = NULL;
   struct curl_httppost *file_lastptr = NULL;
 
+//  pthread_detach(pthread_self());
+
+
   int i;
   for (i = 0; i < n; ++i) {
     curl_formadd(&file_formpost, &file_lastptr, CURLFORM_FILE,
         namelist[i]->d_name, CURLFORM_END);
   }
+//
+//  curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, file_formpost);
+//
+//  CURLcode res = curl_easy_perform(r->curl);
+//  if (res != CURLE_OK) {
+//    /* TODO: Can we retry on certain errors? */
+//    fprintf(stderr, "[R] Error on sending curl dump!\n");
+//    fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
+//    return arg;
+//  }
+//
+//  for (i = 0; i < n; ++i) {
+//    char fullpath[256];
+//    strcpy(fullpath, r->dump_dir);
+//    strcat(fullpath, namelist[i]->d_name);
+//    if (unlink(fullpath) < 0) {
+//      fprintf(stderr, "[R] Error on deleting file:\n  %s\n", fullpath);
+//      perror("[R] unlink");
+//    }
+//    if (r->verbose)
+//      printf("[R] %d dump files transfered.\n", n);
+//  }
+//
 
-  curl_easy_setopt(r->curl, CURLOPT_HTTPPOST, file_formpost);
-
-  CURLcode res = curl_easy_perform(r->curl);
-  if (res != CURLE_OK) {
-    /* TODO: Can we retry on certain errors? */
-    fprintf(stderr, "[R] Error on sending curl dump!\n");
-    fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
-    return arg;
-  }
-
-  for (i = 0; i < n; ++i) {
-    char fullpath[256];
-    strcpy(fullpath, r->dump_dir);
-    strcat(fullpath, namelist[i]->d_name);
-    if (unlink(fullpath) < 0) {
-      fprintf(stderr, "[R] Error on deleting file:\n  %s\n", fullpath);
-      perror("[R] unlink");
-    }
-  }
-
+//  curl_formfree(file_formpost);
   pthread_mutex_lock(&r->sd_thread_lock);
-  r->sd_thread = NULL;
+  r->sd_thread_running = 0;
   pthread_mutex_unlock(&r->sd_thread_lock);
-
-  return arg;
+//
+//  return arg;
+  return NULL ;
 }
 
 static int dump_filter(const struct dirent *entry) {

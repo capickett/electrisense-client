@@ -328,7 +328,6 @@ static void get_args(int argc, char** argv, char** data_source,
     }
   }
   if (*external_dir == NULL ) {
-    printf("BOO");
     *external_dir = (char*) malloc(2);
     strcpy(*external_dir, ".");
   }

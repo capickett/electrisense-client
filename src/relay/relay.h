@@ -21,6 +21,7 @@
 
 struct relay_st {
   /* Any operational parameters go here */
+  pthread_mutex_t sd_thread_lock;
   Buffer *buffers;
   char *server_url;
   char *dump_dir;
@@ -28,8 +29,8 @@ struct relay_st {
   struct curl_httppost *form0;
   struct curl_httppost *form1;
   struct curl_slist *slist;
-  pthread_t *sd_thread;
-  pthread_mutex_t sd_thread_lock;
+  pthread_t *threadid;
+  int sd_thread_running;
   int buf_idx;
   int verbose;
 };
