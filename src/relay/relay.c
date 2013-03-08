@@ -90,6 +90,7 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
     strcat(r->dump_dir, "/");
 
   pthread_mutex_init(&r->sd_thread_lock, NULL);
+  r->sd_thread = (pthread_t*) malloc(sizeof(pthread_t));
 
   r->curl = curl;
   r->form0 = buf0_formpost;
@@ -117,16 +118,13 @@ int relay_process(Relay *r) {
 
   /* Step 1: check sd card */
   pthread_mutex_lock(&r->sd_thread_lock);
-  int thread_running = r->sd_thread == NULL;
+  int thread_running = (r->sd_thread != NULL);
   pthread_mutex_unlock(&r->sd_thread_lock);
 
   if (!thread_running) {
-    if (verbose)
-      printf("[R] Checking dump directory...");
     int n;
     struct dirent **namelist;
-    if ((n = scandir(r->dump_dir, &namelist, dump_filter, alphasort)) < 0) {
-      printf("ERROR!\n");
+    if ((n = scandir(r->dump_dir, &namelist, &dump_filter, alphasort)) < 0) {
       fprintf(stderr, "[R] Error scanning dump directory!");
       perror("[R] scandir");
       return -1;
@@ -145,7 +143,7 @@ int relay_process(Relay *r) {
       handle->r = r;
       handle->namelist = namelist;
       handle->n = n;
-      if (pthread_create(r->sd_thread, NULL, handle_dump_file, (void *) handle)
+      if (pthread_create(r->sd_thread, NULL, &handle_dump_file, (void *) &handle)
           != 0) {
         printf("ERROR!\n");
         fprintf(stderr, "[R] Failed to create child thread!\n");
@@ -243,7 +241,7 @@ static void* handle_dump_file(void *arg) {
     /* TODO: Can we retry on certain errors? */
     fprintf(stderr, "[R] Error on sending curl dump!\n");
     fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
-    return (void*) -1;
+    return arg;
   }
 
   for (i = 0; i < n; ++i) {
@@ -260,7 +258,7 @@ static void* handle_dump_file(void *arg) {
   r->sd_thread = NULL;
   pthread_mutex_unlock(&r->sd_thread_lock);
 
-  return (void*) 0;
+  return arg;
 }
 
 static int dump_filter(const struct dirent *entry) {

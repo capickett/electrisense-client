@@ -19,7 +19,7 @@
 #include "consumer.h"
 #include "../shared/buffer.h"
 
-#define ERROR_LIMIT 10 /**< Number of sdcard writes before notifying server */
+#define ERROR_LIMIT 99999 /**< Number of sdcard writes before notifying server */
 
 static size_t get_read_size(Consumer *c);
 

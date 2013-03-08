@@ -4,8 +4,8 @@
 
 CC       = gcc
 XCC      = mipsel-openwrt-linux-gcc
-CFLAGS  += -Wall -g
-LDFLAGS += -lcurl -lpthread
+CFLAGS  += -Wall -g -pthread
+LDFLAGS += -lcurl -pthread
 
 OBJS = obj/main.o obj/consumer.o obj/relay.o
 X86OBJS = obj/x86_main.o obj/x86_consumer.o obj/x86_relay.o
