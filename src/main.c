@@ -105,20 +105,17 @@ int main(int argc, char* argv[]) {
   relay_needs_refork = 0;
 
   get_args(argc, argv, &data_source, &server_path, &external_dir, &verbose);
-
   if (data_source == NULL || server_path == NULL ) {
     usage();
     exit(EXIT_FAILURE);
   }
-
-  if (verbose) { /* print config */
-    printf("Configuration:\n");
-    printf("  verbosity:    %s\n", (verbose > 1 ? "HIGH" : "LOW"));
-    printf("  data source:  %s\n", data_source);
-    printf("  ext. dump:    %s\n", external_dir);
-    printf("  server path:  %s\n", server_path);
-    printf("\n");
-  }
+  if (verbose) /* print config */
+    printf("Configuration:\n"
+        "  verbosity:    %s\n"
+        "  data source:  %s\n"
+        "  ext. dump:    %s\n"
+        "  server path:  %s\n\n", (verbose > 1 ? "HIGH" : "LOW"), data_source,
+        external_dir, server_path);
 
   /* Check if path exists */
   struct stat dump_stat;
@@ -157,12 +154,8 @@ int main(int argc, char* argv[]) {
   buffers[0].capacity = __BUFFER_CAPACITY;
   buffers[1].capacity = __BUFFER_CAPACITY;
   if (verbose) {
-    printf("  attached. (addr  = %p)\nShared memory setup done!\n", buffers);
+    printf("  attached. (addr  = %p)\nShared memory setup done!\n\n", buffers);
   }
-  /* Shared memory buffer set up */
-
-  if (verbose)
-    printf("\n");
 
   /* fork */
   if (verbose) {
@@ -170,7 +163,6 @@ int main(int argc, char* argv[]) {
     /* Needed to prevent fork from copying buffers & printing 2x */
     fflush(stdout);
   }
-
   act.sa_handler = &handle_relay_death;
   act.sa_flags = SA_NOCLDSTOP;
   if (sigaction(SIGCHLD, &act, NULL ) < 0) {
@@ -178,7 +170,6 @@ int main(int argc, char* argv[]) {
     perror("signal");
     exit(EXIT_FAILURE);
   }
-
   if ((pid = fork()) < 0) {
     printf("FAILURE!\n");
     perror("fork");
@@ -196,8 +187,14 @@ int main(int argc, char* argv[]) {
     }
 
     while (1) {
-      if (relay_process(r) < 0)
+      int res = relay_process(r);
+      if (res < 0) {
+        if (res == RELAYE_SERV) {
+          sleep(1);
+          continue;
+        }
         break;
+      }
     }
 
     relay_cleanup(&r);

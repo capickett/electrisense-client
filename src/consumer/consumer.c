@@ -19,7 +19,7 @@
 #include "consumer.h"
 #include "../shared/buffer.h"
 
-#define ERROR_LIMIT 99999 /**< Number of sdcard writes before notifying server */
+#define ERROR_LIMIT 10 /**< Number of sdcard writes before notifying server */
 
 static size_t get_read_size(Consumer *c);
 
@@ -38,6 +38,7 @@ Consumer* consumer_init(Buffer *b, char *data_source, char *ext_dump,
   c = (Consumer*) malloc(sizeof(struct consumer_st));
 
   c->buffers = b;
+  c->err_count = 0;
   c->data_fd = fd;
   c->verbose = verbose;
   c->buf_idx = 0;
@@ -118,7 +119,7 @@ int consumer_process(Consumer *c) {
           "[C] WARNING: Buffer %d still full! Dumping current buffer\n",
           c->buf_idx ^ 1);
 
-      gettimeofday(&tv, NULL);
+      gettimeofday(&tv, NULL );
       timeinfo = localtime(&tv.tv_sec);
       strftime(fmt_str, sizeof fmt_str, "client-dump_%s%%06u.dat", timeinfo);
       snprintf(time_str, sizeof time_str, fmt_str, tv.tv_usec);

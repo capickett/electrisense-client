@@ -19,6 +19,9 @@
 #include <curl/curl.h>
 #include "../shared/buffer.h"
 
+/** Server had an issue, not our fault */
+#define RELAYE_SERV -2
+
 struct relay_st {
   /* Any operational parameters go here */
   pthread_mutex_t sd_thread_lock;
@@ -70,7 +73,7 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
  * 
  * @param r The handle containing all necessary configuration to perform
  * the relay's task. Caller must call #relay_init before this function.
- * @return 0 if successful, -1 if there is an error
+ * @return 0 if successful, -1 if there is an error, or one of RELAYE_*
  * @see #relay_init
  */
 int relay_process(Relay *r);

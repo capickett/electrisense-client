@@ -40,6 +40,7 @@ Relay* relay_init(Buffer* b, char* server_url, char* backup_source, int verbose)
 
   r = (Relay*) malloc(sizeof(struct relay_st));
   r->buffers = b;
+  r->buf_idx = 0;
   r->server_url = server_url;
   r->verbose = verbose;
   if (verbose)
@@ -118,23 +119,18 @@ int relay_process(Relay *r) {
     return -1;
   }
 
-  if (n > 0) {
-    return handle_dump_files(r, namelist, n);
-  }
+  int ret;
+  if (n > 0 && (ret = handle_dump_files(r, namelist, 1)) != 0)
+    return ret; // TODO: allow for multiple dump files to send
 
   /* Step 2: check buffer */
-  /* Anything there? send PAYLOAD_SIZE bytes to server */
-  /* Grab payload bytes, readjust buffer (circular buffer might
-   be good here) */
-  /* send off bytes */
+  if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
+    r->buf_idx ^= 1; /* switch buffers */
 
   if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
-    r->buf_idx ^= 1; // switch buffers
+    return 0; /* neither buffer is full, work is done */
 
-  if (r->buffers[r->buf_idx].capacity != r->buffers[r->buf_idx].size)
-    return 0; // neither buffer is full, work is done 
-
-  // Set curl buffer pointer
+  /* Set curl buffer pointer */
   curl_easy_setopt(r->curl, CURLOPT_HTTPPOST,
       (r->buf_idx == 0) ? r->form0 : r->form1);
 
@@ -142,11 +138,11 @@ int relay_process(Relay *r) {
   if (res != CURLE_OK) {
     fprintf(stderr, "[R] Error on curl HTTP request!\n");
     fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
-    return -1;
+    return RELAYE_SERV;
   }
-  // successful transfer, reset buffer and swap index
+  /* successful transfer, reset buffer and swap index */
   r->buffers[r->buf_idx].size = 0;
-  r->buf_idx = r->buf_idx ^ 1;
+  r->buf_idx ^= 1;
 
   return 0;
 }
@@ -199,7 +195,7 @@ static int handle_dump_files(Relay *r, struct dirent **namelist, int n) {
     /* TODO: Can we retry on certain errors? */
     fprintf(stderr, "[R] Error on sending curl dump!\n");
     fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
-    return -1;
+    return RELAYE_SERV;
   }
 
   for (i = 0; i < n; ++i) {
