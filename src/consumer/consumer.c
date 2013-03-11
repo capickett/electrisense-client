@@ -5,6 +5,7 @@
  * @authors Larson, Patrick; Pickett, Cameron
  */
 
+#include <curl/curl.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -22,9 +23,10 @@
 #define ERROR_LIMIT 10 /**< Number of sdcard writes before notifying server */
 
 static size_t get_read_size(Consumer *c);
+static int notify_server(Consumer *c);
 
-Consumer* consumer_init(Buffer *b, char *data_source, char *ext_dump,
-    int verbose) {
+Consumer* consumer_init(Buffer *b, char *server_url, char *data_source,
+    char *ext_dump, int verbose) {
   Consumer *c;
   int fd;
 
@@ -42,12 +44,28 @@ Consumer* consumer_init(Buffer *b, char *data_source, char *ext_dump,
   c->data_fd = fd;
   c->verbose = verbose;
   c->buf_idx = 0;
+  c->server_url = server_url;
 
   /* +2 for optional slash */
   c->dump_path = (char*) malloc(strlen(ext_dump) + 2);
   strcpy(c->dump_path, ext_dump);
   if (ext_dump[strlen(ext_dump) - 1] != '/')
     strcat(c->dump_path, "/");
+
+  /* Curl initialization */
+  CURL* curl;
+
+  curl_global_init(CURL_GLOBAL_NOTHING); /* Init curl vars */
+
+  if ((curl = curl_easy_init()) == NULL ) { /* Init an easy_session */
+    curl_global_cleanup();
+    fprintf(stderr, "[C] curl: init failed\n");
+    return NULL ;
+  }
+
+  curl_easy_setopt(curl, CURLOPT_URL, c->server_url);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+  c->curl = curl;
 
   if (verbose)
     printf("[C] Consumer initialized!\n");
@@ -135,11 +153,10 @@ int consumer_process(Consumer *c) {
       c->buffers[c->buf_idx].size = 0;
       ++c->err_count;
 
-      if (c->err_count == ERROR_LIMIT) {
-        /* TODO: Notify server that we are writing to SD too much */
+      if (c->err_count >= ERROR_LIMIT) {
         fprintf(stderr, "[C] Error limit reached!\n");
-        free(tmp_buf);
-        return -1;
+        if (notify_server(c) == 0)
+          c->err_count = 0;
       }
     } else {
       /* Empty. Switch buffers and begin filling. */
@@ -164,9 +181,12 @@ void consumer_cleanup(Consumer **c) {
     perror("close");
   }
 
+  curl_easy_cleanup((*c)->curl);
+  curl_global_cleanup();
+  free((*c)->dump_path);
+
   if ((*c)->verbose)
     printf("[C] Consumer destroyed!\n");
-  free((*c)->dump_path);
   free(*c);
   *c = NULL;
 }
@@ -178,4 +198,15 @@ void consumer_cleanup(Consumer **c) {
  */
 static size_t get_read_size(Consumer *c) {
   return 1024;
+}
+
+/** Notifies the server that the consumer had to dump a buffer. */
+static int notify_server(Consumer *c) {
+  CURLcode res = curl_easy_perform(c->curl);
+  if (res != CURLE_OK) {
+    fprintf(stderr, "[R] Error on curl HTTP request!\n");
+    fprintf(stderr, "[R] %s\n", curl_easy_strerror(res));
+    return -1;
+  }
+  return 0;
 }

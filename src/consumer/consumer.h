@@ -27,6 +27,8 @@
 struct consumer_st {
   /* Any operational parameters go here */
   Buffer *buffers; /**< A pointer to two buffers that make the double buffer */
+  CURL *curl; /**< Server notify curl */
+  char *server_url;
   char *dump_path; /**< The path to the external buffer dump */
   int buf_idx; /**< The current buffer in use by the consumer */
   int data_fd; /**< A file descriptor for the source of data */
@@ -58,8 +60,8 @@ typedef struct consumer_st Consumer;
  * caller's responsibility to free the Consumer handler by calling
  * #consumer_cleanup.
  */
-Consumer* consumer_init(Buffer* b, char* data_source, char* ext_dump,
-    int verbose);
+Consumer* consumer_init(Buffer* b, char *server_url, char* data_source,
+    char* ext_dump, int verbose);
 
 /**
  * Perform one unit of work.
