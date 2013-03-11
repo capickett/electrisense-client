@@ -80,23 +80,13 @@ int consumer_process(Consumer *c) {
   }
 
   /* Step 2: check if buffer can fit */
-  if (verbose)
-    printf("[C] Checking buffers\n");
-
   if (amount_read <= buf_remaining) {
     /* Can fit? Fill buffer */
-    if (verbose)
-      printf("[C] Fits in buffer %d\n", c->buf_idx);
-
     memcpy(dest, tmp_buf, amount_read);
     cur_buf->size += amount_read;
   } else {
-
     if (buf_remaining > 0) {
       /* Partially fits? Fill buffer then... */
-      if (verbose)
-        printf("[C] Partially fits in buffer %d\n", c->buf_idx);
-
       amount_read -= buf_remaining;
       memcpy(dest, tmp_buf, buf_remaining);
       cur_buf->size = cur_buf->capacity; /* buffer is now full */
